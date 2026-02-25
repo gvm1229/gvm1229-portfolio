@@ -26,6 +26,23 @@ tags:
 
 ### 3. 간소화 계획 수립 (무엇을 넣고 뺄지)
 
+```mermaid
+flowchart LR
+    subgraph MVP["MVP (필수)"]
+        A[2D 그리드 맵]
+        B[지형 비용·회피/방어]
+        C[유닛·진영]
+        D[이동 범위·A* 경로]
+        E[턴제·전투·승패]
+    end
+    subgraph 제외["제외/보류"]
+        F[원거리·마법]
+        G[무기·아이템·경험치]
+        H[스토리·챕터]
+        I[전투 전용 UI]
+    end
+```
+
 - **반드시 넣기로 한 것**
   - 2D 그리드 맵, 지형 타입별 이동 비용·회피/방어 보너스
   - 유닛 시스템(스탯: HP, STR, DEF, SPD, MOV 등), 진영(아군/적군) 구분
@@ -43,7 +60,9 @@ tags:
   - 별도 그래픽 엔진 없이 콘솔 API로 출력하여 구현 난이도와 의존성을 낮추기로 함
 - **언어·구조**: C++, 엔진 DLL + 게임 exe 분리
   - 엔진은 나중에 다른 프로젝트에서 재사용할 수 있도록 DLL로 분리하고, 게임 로직은 exe에서 엔진을 호출하는 구조로 설계
-- **맵 데이터**: 텍스트 파일(예: `BattleMap.txt`)로 지형 정의, `.`/`T`/`M`/`#` 등 문자로 타일 구분
+- **맵 데이터**: 텍스트 파일(예: `BattleMap.txt`)로 지형 정의. 문자별 매핑: `.`(평지), `T`(숲), `^`(산), `#`(성), `H`(마을), `~`(물), `X`(벽)
+
+*[이미지 PLACEHOLDER: BattleMap.txt 예시 파일 - 문자-지형 매핑이 적용된 맵 텍스트 스크린샷]*
 
 ### 5. 개발 순서(큰 흐름) 가설
 
@@ -54,6 +73,22 @@ tags:
 1. UI·로그·종료 조건
 
 - 당일에는 구체 일정보다 “맵 → 이동 → 전투 → 턴 → 종료” 순서로 진행한다는 방향만 정함
+
+### 6. BattleMap.txt 형식 (참고)
+
+fe_proj의 `LoadMap`에서 사용하는 문자-지형 매핑 예시임.
+
+```cpp
+switch (ch) {
+case '.': type = TerrainType::Plain; break;    // 평지
+case 'T': type = TerrainType::Forest; break;   // 숲
+case '^': type = TerrainType::Mountain; break; // 산
+case '#': type = TerrainType::Castle; break;   // 성
+case 'H': type = TerrainType::Village; break;  // 마을
+case '~': type = TerrainType::Water; break;    // 물
+case 'X': type = TerrainType::Wall; break;     // 벽
+}
+```
 
 ## 난관
 

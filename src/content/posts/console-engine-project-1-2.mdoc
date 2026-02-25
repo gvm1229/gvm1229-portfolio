@@ -22,8 +22,10 @@ tags:
     - 성은 체력 회복 가능
   - 지형별 색상 시스템
 - **맵 파일 로딩**: `BattleMap.txt` 텍스트 파일 파싱
-  - `.` = 평지, `T` = 숲, `M` = 산, `#` = 벽, `C` = 성, `V` = 마을, `~` = 물, `X` = 벽
+  - `.` = 평지, `T` = 숲, `^` = 산, `#` = 성, `H` = 마을, `~` = 물, `X` = 벽
   - 파일을 읽어서 Grid에 타일들을 생성함
+
+*[이미지 PLACEHOLDER: 지형별 색상 구분 - 평지/숲/산/성 등 타일 색상이 적용된 맵 화면]*
 
 ### 2. BattleLevel 기본 구조
 
@@ -84,7 +86,29 @@ tags:
     - 우선순위 큐를 사용해서 비용이 낮은 타일부터 탐색함
   - 4방향 이동만 지원 (상하좌우), 유닛이 있거나 통과 불가능한 타일 제외
 
+- **MovementCalculator::CalculateReachableTiles** (fe_proj)
+
+```cpp
+int newCost = current.cost + tile->GetMovementCost();
+if (newCost > maxMovement) continue;
+
+costMap[nextPos] = newCost;
+openList.push({ nextPos, newCost });
+```
+
+- **Tile 생성자 내 displayStr 초기화** (배열 초기화 해결 예)
+
+```cpp
+// 생성자 본문에서 각 행 초기화
+strcpy_s(displayStr[0], sizeof(displayStr[0]), ".");
+strcpy_s(displayStr[1], sizeof(displayStr[1]), ".");
+strcpy_s(displayStr[2], sizeof(displayStr[2]), ".");
+strcpy_s(displayStr[3], sizeof(displayStr[3]), ".");
+```
+
 ### 5. 유닛 이동 애니메이션
+
+*[이미지 PLACEHOLDER: 유닛 이동 애니메이션 GIF - 유닛이 경로를 따라 타일 단위로 이동하는 모습]*
 
 - **타이머 기반 이동**: `moveTimer`와 `moveSpeed`로 프레임 독립적 이동
   - 프레임레이트와 상관없이 일정한 속도로 이동함
@@ -99,7 +123,7 @@ tags:
   - 1번 키 = 첫 번째 유닛, 2번 키 = 두 번째 유닛, ...
 - **마우스 클릭 이동**: 선택된 유닛을 클릭한 타일로 이동
   - 이동 가능 범위 안의 타일을 클릭하면 그곳으로 이동함
-- **이동 범위 하이라이트**: 선택 시 청록색 점(`·`)으로 이동 가능 범위 표시 (sortingOrder 9)
+- **이동 범위 하이라이트**: 선택 시 청록색 점(`·`)으로 이동 가능 범위 표시 (sortingOrder 8)
   - 어디까지 이동할 수 있는지 시각적으로 보여줌
 
 ## 난관

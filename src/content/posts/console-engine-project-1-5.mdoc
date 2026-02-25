@@ -34,6 +34,13 @@ tags:
     - 긴 텍스트는 자동으로 여러 줄로 나눔
   - `wrappedLogLines` 벡터로 프레임 종료까지 문자열 수명 보장
     - 래핑된 줄들을 벡터에 저장해두고, 그 주소를 렌더러에 넘김
+
+```cpp
+// DrawLogPanel 내: 래핑된 줄을 벡터에 저장 후 Submit
+wrappedLogLines.push_back(currentLine);
+// ...
+Renderer::Get().Submit(seg.first.c_str(), Vector2(logX + x, logY + i), seg.second, 10);
+```
 - **AddLog() 함수**: 로그를 추가하는 함수
   - 단일 메시지 또는 세그먼트 배열로 로그 추가
     - 간단한 문자열이거나, 색상이 다른 여러 부분으로 구성된 로그를 추가할 수 있음
@@ -63,6 +70,14 @@ tags:
   - 해결: 클래스 멤버 `uiBuffers[16][64]`에 동적 텍스트 저장 후 포인터 전달
     - BattleLevel의 멤버 변수에 저장해두면 계속 유효함
 
+```cpp
+// BattleLevel 멤버
+char uiBuffers[16][64];
+// DrawStatsPanel 등에서
+sprintf_s(uiBuffers[2], sizeof(uiBuffers[2]), "HP: %d/%d", stats.currentHP, stats.maxHP);
+Renderer::Get().Submit(uiBuffers[2], Vector2(panelX, panelY++), Color::White, 10);
+```
+
 ### 4. 메모리 누수 해결
 
 - **wchar 변환 버퍼 누수**:
@@ -71,6 +86,16 @@ tags:
   - 해결: 재사용 버퍼 `std::vector<wchar_t> wideBuffer` 사용, 필요 시에만 `resize()`
     - 한 번 만든 버퍼를 계속 재사용함
     - 더 긴 문자열이 필요하면 버퍼 크기만 늘림
+
+```cpp
+// Renderer::Draw 내 - 재사용 버퍼 패턴
+std::vector<wchar_t> wideBuffer;
+// ...
+int wideLength = MultiByteToWideChar(CP_UTF8, 0, command.text, -1, nullptr, 0);
+if (wideBuffer.size() < static_cast<size_t>(wideLength))
+    wideBuffer.resize(wideLength);
+MultiByteToWideChar(CP_UTF8, 0, command.text, -1, wideBuffer.data(), wideLength);
+```
 - **맵 배경 타일 누수 (시도 후 되돌림)**:
   - 문제: 맵 배경을 gray로 바꾼 뒤 전투 로그 오른쪽에 회색 타일이 비치거나 깜박임
     - 로그 패널 오른쪽에 맵 배경색이 보이는 현상
@@ -97,6 +122,9 @@ tags:
 - **문제**: 로그 패널에 표시되는 문자가 깨지거나 쓰레기 값 표시
   - 화면에 이상한 문자가 나타남
 - **원인**:
+
+*[이미지 PLACEHOLDER: 댕글링 포인터로 인한 렌더 깨짐 - 로그/유닛번호가 깨진 화면]*
+
   - `Submit()`은 포인터만 저장하고 실제 그리기는 나중에 수행
     - 렌더러는 "이 주소에 있는 문자열을 그려줘"라고만 기억함
   - 임시 문자열(`std::string line`)의 `c_str()` 포인터를 넘겨 댕글링 포인터 발생
@@ -140,6 +168,9 @@ tags:
   - 게임을 오래 하면 메모리를 계속 먹어서 느려짐
 - **난관**: 여러 곳에서 할당이 발생하여 원인 파악 어려움
   - 어디서 메모리를 잃어버리는지 찾기 어려움
+
+*[이미지 PLACEHOLDER: Visual Studio CRT 디버그 힙 - 메모리 누수 보고 화면]*
+
 - **해결**:
   - Visual Studio CRT 디버그 힙 기능 활용
     - 프로그램이 끝날 때 메모리 누수를 자동으로 찾아줌

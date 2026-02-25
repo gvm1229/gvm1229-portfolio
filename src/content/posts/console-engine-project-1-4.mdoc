@@ -29,8 +29,8 @@ tags:
 
 ### 2. 렌더링 우선순위 시스템 정립
 
-- **sortingOrder 계층**: 지형(7) < 아이템(8) < 하이라이트(9) < 유닛(10)
-  - 숫자가 클수록 위에 그려짐
+- **sortingOrder 계층**: 지형(7, 9) < 하이라이트(8) < 유닛(10)
+  - 평지 7, 기타 지형 9, 이동 범위 하이라이트 8, 유닛 10. 숫자가 클수록 위에 그려짐
   - 같은 위치에 여러 게 있을 때, 우선순위가 높은 것만 보임
 - 같은 위치에 여러 객체가 있을 때 우선순위 높은 것만 표시
 - 지형이 유닛에 가려지지 않도록 설계
@@ -39,12 +39,33 @@ tags:
   - 스탯 패널: `panelX = grid->GetWidth() * 2 + 6` (맵 너비 * 2 + 6칸 여백)
   - 맵과 UI가 겹치지 않도록 설정
 
+```mermaid
+flowchart TD
+    subgraph layers["sortingOrder (숫자 ↑ = 위에 그려짐)"]
+        L7["7: 지형(평지)"]
+        L8["8: 이동범위 하이라이트"]
+        L9["9: 지형(기타)"]
+        L10["10: 유닛"]
+    end
+    L7 --> L8 --> L9 --> L10
+```
+
 ### 3. 전투 시스템 구현
 
+*[이미지 PLACEHOLDER: 인접 전투 발생 화면 - 아군이 적을 공격하는 직전/직후 맵 상태]*
+
 - **PerformCombat() 함수**: 두 유닛이 싸우는 함수
-  - 데미지 계산: `max(0, 공격자 STR - 방어자 DEF)`
-    - 공격자의 공격력에서 방어자의 방어력을 뺀 값
-    - 음수가 되면 0으로 처리 (최소 데미지는 0)
+  - 데미지 계산: `max(0, 공격자 STR - 방어자 DEF)` (fe_proj `BattleLevel::PerformCombat`)
+
+```cpp
+int atk = attacker->GetStats().strength;
+int def = defender->GetStats().defense;
+int damagePerHit = (atk - def > 0) ? (atk - def) : 0;
+bool doubleHit = attacker->GetStats().speed > defender->GetStats().speed;
+int hits = doubleHit ? 2 : 1;
+defender->TakeDamage(damagePerHit * hits);
+```
+
   - SPD 우위 시 2회 타격 로직
     - 공격자의 속도가 방어자의 속도보다 크면 2번 때림
     - 아니면 1번만 때림
@@ -105,6 +126,8 @@ tags:
   - Draw에서는 맵 중앙에 "PLAYER VICTORY" / "ENEMY VICTORY"를 진영 색상으로 표시
     - 승리 메시지만 보여줌
 
+*[이미지 PLACEHOLDER: 게임 종료 화면 - PLAYER VICTORY 또는 ENEMY VICTORY 표시 화면]*
+
 ### 7. 전투 관련 입력 처리
 
 - **인접 적 클릭**: 즉시 `PerformCombat()` 호출
@@ -124,7 +147,13 @@ tags:
     - `PerformCombat()` 안에서 게임이 끝나서 `unitPendingAttack`이 nullptr가 되었는데, 그 다음 줄에서 `unitPendingAttack->EndTurn()`을 호출하려고 해서 크래시
 - **해결**:
   - `PerformCombat()` 호출 직후 `if (gameOver) return;` 체크 추가
-    - 게임이 끝났는지 확인하고, 끝났으면 더 이상 진행하지 않음
+
+```cpp
+PerformCombat(unitPendingAttack, attackTarget);
+if (gameOver) return;  // 게임 종료 시 더 이상 접근하지 않음
+unitPendingAttack->EndTurn();
+```
+
   - `ProcessPendingAttackAfterMove()`와 `OnMouseClick()`의 인접 적 공격 분기에 적용
   - Draw에서도 `gameOver`일 때 유닛 렌더링 생략
     - 게임이 끝났으면 유닛을 그리지 않음
@@ -170,8 +199,8 @@ tags:
   - 이동 가능한 곳을 표시하는 점이 지형에 가려져서 안 보임
 - **난관**: 한 타일에 문자 하나만 그려지는 콘솔의 제약
   - 콘솔은 한 칸에 하나의 문자만 표시할 수 있음
-- **해결**: 지형(7) < 하이라이트(9) < 유닛(10) 순서로 설정하여 하이라이트가 지형 위에 표시되도록 함
-  - 하이라이트의 우선순위를 지형보다 높게 설정함
+- **해결**: 평지(7) < 하이라이트(8) < 기타 지형(9) < 유닛(10) 순서로 설정하여 하이라이트가 평지 위에 표시되도록 함
+  - DrawGrid에서 평지는 7, 기타 지형은 9, DrawMovementRange에서 하이라이트는 8 사용
 - **개인적으로 어려웠던 점**: 한 타일에 문자 하나만 그려지는 콘솔 제약 때문에, 지형(terrain)과 이동 범위 하이라이트(highlight) 중 무엇을 위에 둘지 결정하기가 쉽지 않았음. 유저가 "이동 가능한 곳"을 잘 보이게 하려면 하이라이트가 지형 위에 있어야 하는데, 그걸 숫자 하나로 표현해야 해서 고민이 많았음.
 
 ### 6. 유닛 렌더링과 좌표 변환 (2x2 적용)
