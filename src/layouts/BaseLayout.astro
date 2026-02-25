@@ -7,6 +7,7 @@
  */
 import "@/styles/global.css";
 import Header from "@/components/Header.astro";
+import ThemeLoader from "@/components/ThemeLoader";
 
 interface Props {
     title?: string;
@@ -53,6 +54,10 @@ const validScheme = ["blue", "gray", "beige", "blackwhite"].includes(
     <body
         class="min-h-screen bg-(--color-surface) text-(--color-foreground) transition-colors"
     >
+        {
+            /* 런타임 컬러 스킴 반영: Supabase site_config에서 color_scheme을 읽어 data-color-scheme 갱신 */
+        }
+        <ThemeLoader client:load />
         <Header />
         <main class="container mx-auto px-4 py-8">
             <slot />
