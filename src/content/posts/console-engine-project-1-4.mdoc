@@ -54,7 +54,7 @@ tags:
 *[이미지 PLACEHOLDER: 인접 전투 발생 화면 - 아군이 적을 공격하는 직전/직후 맵 상태]*
 
 - **PerformCombat() 함수**: 두 유닛이 싸우는 함수
-  - 데미지 계산: `max(0, 공격자 STR - 방어자 DEF)` (fe_proj `BattleLevel::PerformCombat`)
+  - 데미지 계산: `max(0, 공격자 STR - 방어자 DEF)` (`BattleLevel::PerformCombat`)
 
 ```cpp
 int atk = attacker->GetStats().strength;
