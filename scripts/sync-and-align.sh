@@ -53,6 +53,8 @@ fi
 
 # rebase 실행
 git rebase main --committer-date-is-author-date
+# rebase 이후에는 무조건 force push
+git push origin develop --force
 
 REBASE_RESULT=$?
 
