@@ -1,54 +1,47 @@
 ---
 /**
  * 블로그 포스트 상세 페이지
- * - Keystatic/Content Collections 기반
+ * 빌드 타임에 Supabase posts 테이블에서 fetch한다.
+ * 마크다운 본문은 marked로 HTML 변환 후 set:html로 삽입한다. (G단계에서 Shiki로 교체 예정)
  */
 import BaseLayout from "@/layouts/BaseLayout.astro";
-import { getCollection } from "astro:content";
+import { serverClient } from "@/lib/supabase";
 import { formatPubDateKST } from "@/lib/blog";
+import { marked } from "marked";
 
 export async function getStaticPaths() {
-    try {
-        const [posts, tagsEntries] = await Promise.all([
-            getCollection("posts"),
-            getCollection("tags").catch(() => []),
-        ]);
-        const slugToTagName = new Map(
-            tagsEntries.map((t) => [t.id, t.data.name])
-        );
-        const slugToTagColor = new Map(
-            tagsEntries
-                .filter((t) => t.data.color?.trim())
-                .map((t) => [
-                    t.id,
-                    t.data.color!.trim().replace(/^['"]|['"]$/g, ""),
-                ])
-        );
-        return posts.map((post) => ({
-            params: { slug: post.slug },
-            props: {
-                post,
-                tagDisplay: (post.data.tags ?? []).filter(Boolean).map((s) => ({
-                    slug: s,
-                    name: slugToTagName.get(s) ?? s,
-                    color: slugToTagColor.get(s),
-                })),
-            },
-        }));
-    } catch {
-        return [];
-    }
+    if (!serverClient) return [];
+    const { data: posts } = await serverClient
+        .from("posts")
+        .select("slug")
+        .eq("published", true);
+    if (!posts) return [];
+    return posts.map((p) => ({ params: { slug: p.slug } }));
 }
 
-const { post, tagDisplay } = Astro.props;
-const { Content } = await post.render();
-const category = post.data.category?.trim() ?? "";
+const { slug } = Astro.params;
+if (!slug || !serverClient) return Astro.redirect("/blog");
+
+const { data: post } = await serverClient
+    .from("posts")
+    .select("*")
+    .eq("slug", slug)
+    .single();
+
+if (!post) return Astro.redirect("/blog");
+
+// 마크다운 → HTML 변환 (빌드 타임, G단계에서 Shiki 하이라이팅으로 교체 예정)
+const contentHtml = await marked.parse(post.content ?? "");
+
+const category: string = post.category?.trim() ?? "";
+const tagList: string[] = post.tags ?? [];
+const pubDate = new Date(post.pub_date);
 const pageTitle = category
-    ? `${category} | ${post.data.title} - FoliumOnline`
-    : `${post.data.title} - FoliumOnline`;
+    ? `${category} | ${post.title} - FoliumOnline`
+    : `${post.title} - FoliumOnline`;
 ---
 
-<BaseLayout title={pageTitle} description={post.data.description ?? ""}>
+<BaseLayout title={pageTitle} description={post.description ?? ""}>
     <article class="max-w-3xl mx-auto">
         <header class="mb-6">
             <h1
@@ -66,71 +59,57 @@ const pageTitle = category
                         </>
                     ) : null
                 }
-                <span>{post.data.title}</span>
+                <span>{post.title}</span>
             </h1>
             {
-                post.data.description && (
+                post.description && (
                     <p class="text-lg text-(--color-muted)">
-                        {post.data.description}
+                        {post.description}
                     </p>
                 )
             }
             <time
                 class="text-sm text-(--color-muted) block mt-2"
-                datetime={post.data.pubDate.toISOString()}
+                datetime={pubDate.toISOString()}
             >
-                {formatPubDateKST(post.data.pubDate)}
+                {formatPubDateKST(pubDate)}
             </time>
             {
-                tagDisplay.length > 0 && (
+                tagList.length > 0 && (
                     <div class="flex flex-wrap gap-2 mt-4" aria-label="태그">
-                        {tagDisplay.map((t) => (
+                        {tagList.map((t) => (
                             <a
-                                href={`/blog?tag=${encodeURIComponent(t.slug)}`}
+                                href={`/blog?tag=${encodeURIComponent(t)}`}
                                 class="px-2 py-1 text-xs rounded-full bg-(--color-tag-bg) text-(--color-tag-fg) hover:opacity-85 transition-opacity"
-                                style={
-                                    t.color
-                                        ? {
-                                              backgroundColor: t.color,
-                                              color: "#fff",
-                                          }
-                                        : undefined
-                                }
                             >
-                                {t.name}
+                                {t}
                             </a>
                         ))}
                     </div>
                 )
             }
         </header>
-        <div class="post-content prose dark:prose-invert max-w-none">
-            <Content />
-        </div>
+        <div
+            class="post-content prose dark:prose-invert max-w-none"
+            set:html={contentHtml}
+        />
     </article>
 </BaseLayout>
 
 <script>
     import { getMermaidConfig } from "@/lib/mermaid-themes";
     /**
-     * Markdoc 본문 내 ```mermaid 코드 블록을 클라이언트에서 Mermaid로 렌더링.
-     * Markdoc 출력: pre[data-language="mermaid"] (내부에 code 없음) 또는 pre > code.language-mermaid
+     * 본문 내 ```mermaid 코드 블록을 클라이언트에서 Mermaid로 렌더링.
+     * marked 출력: pre > code.language-mermaid
      */
     async function renderMermaidBlocks() {
         const container = document.querySelector(".post-content");
         if (!container) return;
-        const mermaidPreBlocks = container.querySelectorAll(
-            'pre[data-language="mermaid"]'
-        );
-        const legacyBlocks = container.querySelectorAll(
-            "pre > code.language-mermaid"
-        );
-        const blocks =
-            mermaidPreBlocks.length > 0
-                ? Array.from(mermaidPreBlocks)
-                : Array.from(legacyBlocks)
-                      .map((code) => code.closest("pre"))
-                      .filter(Boolean);
+        const blocks = Array.from(
+            container.querySelectorAll("pre > code.language-mermaid")
+        )
+            .map((code) => code.closest("pre"))
+            .filter(Boolean);
         if (blocks.length === 0) return;
         const mermaid = (
             await import("https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs")
