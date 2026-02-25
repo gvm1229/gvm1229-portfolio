@@ -8,6 +8,10 @@ CHILD_DIR="."
 CHILD_COMMIT_HASH=$(git rev-parse HEAD)
 echo "🚀 [워크플로우 시작] 현재 commit($CHILD_COMMIT_HASH)을 FoliumOnline로 전파합니다."
 
+# --- STEP 0: 자식 저장소 혹시 모를 변경사항 저장 ---
+git stash
+echo "📦 0. 자식 저장소의 변경사항을 임시 저장(Stash)합니다."
+
 # --- STEP 1: FoliumOnline 저장소 로컬 최신화 ---
 echo "📡 1. FoliumOnline 저장소(FoliumOnline) 상태 점검 및 최신화..."
 cd "$PARENT_DIR" || exit
@@ -49,12 +53,18 @@ fi
 
 # rebase 실행
 git rebase main --committer-date-is-author-date
+# rebase 이후에는 무조건 force push
+git push origin develop --force
 
 REBASE_RESULT=$?
 
 if [ $REBASE_RESULT -eq 0 ]; then
     echo "✨ [완료] 모든 워크플로우가 성공적으로 끝났습니다."
     echo "현재 위치: gvm1229-portfolio/develop (구조 동기화 및 기록 정렬 완료)"
+
+    # 자식 저장소 기존 작업물 복구
+    git stash pop
+    echo "📦 [완료] 자식 저장소의 변경사항을 복구(Stash Pop)합니다."
 else
     echo "❌ [오류] rebase 중 충돌이 발생했습니다."
     echo "수동으로 충돌을 해결한 후 'git rebase --continue'를 입력하거나, 'git rebase --abort'로 취소하세요."
