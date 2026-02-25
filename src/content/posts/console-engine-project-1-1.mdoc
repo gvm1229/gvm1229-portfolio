@@ -19,6 +19,8 @@ tags:
 - UTF-8 코드 페이지 설정
   - 한글, 특수문자 등이 제대로 표시되도록 설정
 
+*[이미지 PLACEHOLDER: UTF-8 한글 출력 확인 - 콘솔에 한글이 정상 표시되는 스크린샷]*
+
 ## 난관
 
 ### 1. 콘솔 UTF-8/유니코드 출력 문제
@@ -33,6 +35,20 @@ tags:
   - 더불어, Windows 언어 설정에서 unicode 설정을 활성화함
 
 - **추가 설정**: 콘솔 코드 페이지 및 가상 터미널 설정 필요
+
+*[이미지 PLACEHOLDER: Renderer Draw 호출 시점 콘솔 화면 - UTF-8 문자열이 렌더되는 모습]*
+
+- **Renderer::Draw() 내 UTF-8→UTF-16 변환 코드** (fe_proj `Renderer.cpp`)
+
+```cpp
+// UTF-8 문자열을 UTF-16으로 변환
+int wideLength = MultiByteToWideChar(CP_UTF8, 0, command.text, -1, nullptr, 0);
+if (wideLength <= 0) continue;
+
+wchar_t* wideText = new wchar_t[wideLength];
+MultiByteToWideChar(CP_UTF8, 0, command.text, -1, wideText, wideLength);
+// ... WriteConsoleOutputW 등에 wideText 사용 후 delete[] wideText
+```
 
 1일차는 `Sokoban` 프로젝트의 게임 엔진의 기초 구조를 기반으로, UTF-8/유니코드 처리의 해결에 집중했으며, 이후 개발의 기반을 마련하는 데 집중했음.
 

@@ -9,7 +9,7 @@ teamSize: 1
 accomplishments:
   - 원작 방대 범위를 MVP로 줄여 필수 5요소만 고정·완성
   - 2D 그리드·A* 경로, 턴제 전투·적 AI, 2x2 렌더·좌표 변환 설계
-  - 댕글링 포인터·메모리 누수 해결, DEBUG.md 등 문서화
+  - 댕글링 포인터·메모리 누수 해결, DEBUG.md 등 문서화 및 AI context 활용
 keywords:
   - C++
   - Windows 콘솔
@@ -26,100 +26,351 @@ thumbnail: "https://img.youtube.com/vi/Qr6olpAJfvk/hqdefault.jpg"
 
 # 콘솔 엔진 프로젝트 #1 (턴제 전술 게임)
 
-## 프로젝트 개요
+| 항목 | 내용 |
+| --- | --- |
+| 게임 장르 | 턴제 전술 |
+| 플랫폼 | PC (Windows, Console Application) |
+| 개발 인원 | 1인 |
+| 사용 기술 | C++, Windows 콘솔, 엔진 DLL 분리 |
+| 프로젝트 기간 | 2026.02.01 ~ 2026.02.11 |
+| GitHub | [https://github.com/gvm1229/fire_emblem_clone](https://github.com/gvm1229/fire_emblem_clone) |
+| 영상 | [https://youtu.be/Qr6olpAJfvk](https://youtu.be/Qr6olpAJfvk) |
 
----
+## 게임 소개
 
-- **프로젝트 설명 :** Fire Emblem(특히 Shadow Dragon and the Blade of Light)을 참고한 **턴제 전술 게임 클론**. 2D 그리드 맵 위에서 유닛을 이동·배치하고, 이동력과 지형 비용을 고려해 전략적으로 인접 전투를 벌이는 한 판이 돌아가는 게임.
-- **사용 도구 :** Visual Studio, C++, Windows 콘솔
-- **제작 기간 :** 2026.2.5 - 2026.2.11
-- **GitHub :** [https://github.com/gvm1229/fire_emblem_clone](https://github.com/gvm1229/fire_emblem_clone)
-- **영상 :** [https://youtu.be/Qr6olpAJfvk](https://youtu.be/Qr6olpAJfvk)
-
-{% youtube id="Qr6olpAJfvk" /%}
+Fire Emblem(특히 Shadow Dragon and the Blade of Light)을 참고한 **턴제 전술 게임 클론**임. 2D 그리드 맵 위에서 유닛을 이동·배치하고, 이동력과 지형 비용을 고려해 전략적으로 인접 전투를 벌이는 한 판이 돌아가는 게임을 목표로 함.
 
 **참조한 원작 요소:** 맵 기반 턴제 전투, 유닛별 이동력·스탯(HP/STR/DEF/SPD/MOV), 지형 효과(이동 비용, 회피/방어 보너스), 아군/적 턴 교대, 승리/패배 조건.
 
-**플랫폼·구조:** Windows 콘솔만 사용하고 별도 그래픽 엔진 없이 콘솔 API로 출력. C++로 작성했고, 엔진은 DLL로 분리해 재사용 가능하게 두고 게임 로직은 exe에서 엔진을 호출하는 구조. 맵 데이터는 텍스트 파일(`BattleMap.txt`)로 지형을 정의하고 `.`/`T`/`M`/`#` 등 문자로 타일을 구분함.
+**플랫폼·구조:** Windows 콘솔만 사용하고 별도 그래픽 엔진 없이 콘솔 API로 출력함. C++로 작성했고, 엔진은 DLL로 분리해 재사용 가능하게 두고 게임 로직은 exe에서 엔진을 호출하는 구조로 설계함. 맵 데이터는 텍스트 파일(`BattleMap.txt`)로 지형을 정의하고 `.`/`T`/`M`/`#` 등 문자로 타일을 구분함.
 
-## 기술 스택
+## 게임 영상
 
----
+{% youtube id="Qr6olpAJfvk" /%}
 
-- **활용한 기술 스택 :** C++, Windows 콘솔, DLL, 턴제 전투 시스템, A* 경로 탐색, 2D 그리드·지형 비용, 파일 파싱(BattleMap.txt)
-- **선택 이유 :** 단기간에 "한 판 돌아가는" 턴제 전술 게임을 완성하기 위해 콘솔만으로 구현하고, 엔진을 DLL로 분리해 재사용성과 구조를 분리하고자 했습니다.
+*[이미지 PLACEHOLDER: 게임 플레이 대표 스크린샷 - 맵·유닛·이동 범위·스탯 패널·이벤트 로그가 보이는 전체 화면]*
 
-## 주요 구현 내용
+## 개발 내용
 
----
+### 1. 기획 및 MVP 범위 설정
 
-### 기획 및 MVP 범위 설정
+```mermaid
+flowchart LR
+    subgraph MVP["MVP (필수)"]
+        A[2D 그리드 맵]
+        B[지형 비용·회피/방어]
+        C[유닛·진영]
+        D[이동 범위·A* 경로]
+        E[턴제·전투·승패]
+    end
+    subgraph 제외["제외/보류"]
+        F[원거리·마법]
+        G[무기·아이템·경험치]
+        H[스토리·챕터]
+        I[전투 전용 UI]
+    end
+```
 
-- 원작의 방대한 요소(스토리·챕터·대화, 유닛 클래스·경험치·레벨업, 무기·아이템·상점, 원거리/마법 공격, 전투 전용 화면 등) 중 "한 판이 돌아가는 턴제 전투 한 번"을 MVP로 고정
-- 필수 5요소 고정: 2D 그리드 맵, 지형별 이동 비용·회피/방어 보너스, 유닛 시스템·진영 구분, 이동 범위·A* 경로 탐색, 턴제(플레이어↔적)·인접 전투·승리/패배 조건
-- 원거리·마법, 무기·아이템·경험치·레벨업, 스토리·챕터·대화는 처음부터 제외·보류
+**구현 목적:** 원작에는 스토리·챕터·대화, 유닛 클래스·경험치·레벨업, 무기·아이템·상점, 원거리/마법 공격, 전투 전용 화면 등 구현할 요소가 많음. 콘솔 텍스트 기반으로 단기간에 만들려면 전부 넣는 것이 불가능하다고 판단했음.
 
-### 렌더링 및 좌표 시스템
+**구현 내용:**
+- "한 판이 돌아가는 턴제 전투 한 번"을 MVP로 고정함.
+- 필수 5요소 고정: 2D 그리드 맵, 지형별 이동 비용·회피/방어 보너스, 유닛 시스템·진영 구분, 이동 범위·A* 경로 탐색, 턴제(플레이어↔적)·인접 전투·승리/패배 조건.
+- 원거리·마법, 무기·아이템·경험치·레벨업, 스토리·챕터·대화는 처음부터 제외·보류함.
+- 전투 전용 UI 화면은 시간 부족으로 포기하고, 맵 위 이벤트 로그로 전투 결과만 표시하는 방식으로 단순화함.
 
-- 콘솔 한 타일에 문자 하나만 그려지는 제약을 고려해 **sortingOrder**로 계층 설계(지형 7 &lt; 하이라이트 9 &lt; 유닛 10)
-- 2x2 멀티라인으로 타일·유닛을 시각적으로 구분, **그리드 좌표↔화면 좌표** 변환 공식 정리(맵: `baseX = x*2+1`, `baseY = y*2+1` / 마우스: `gridX = (mousePos.x-1)/2` 등)
+    - BattleLevel::LoadMap  
+    텍스트 파일(`BattleMap.txt`)에서 맵 크기와 지형 문자를 파싱함. 문자별 지형 매핑은 아래와 같음.
 
-### 게임 로직 및 전투 시스템
+        ```cpp
+        switch (ch)
+        {
+        case '.': type = TerrainType::Plain; break;    // 평지
+        case 'T': type = TerrainType::Forest; break;   // 숲
+        case '^': type = TerrainType::Mountain; break; // 산
+        case '#': type = TerrainType::Castle; break;   // 성
+        case 'H': type = TerrainType::Village; break;  // 마을
+        case '~': type = TerrainType::Water; break;    // 물
+        case 'X': type = TerrainType::Wall; break;     // 벽
+        default:  type = TerrainType::Plain; break;
+        }
+        grid->SetTile(x, y, type);
+        ```
 
-- 이동 범위 계산·A* 경로 탐색
-- 턴제 전투(데미지 계산, SPD 기반 2회 타격), 단순 적 AI
-- `CheckEndConditions()`·`TriggerGameOver()`로 종료 조건·정리 처리
+    - Tile (지형 타입)  
+    지형별 이동 비용·회피·방어 보너스 정의. MovementCalculator에서 `tile->GetMovementCost()`로 활용함.
 
-### 메모리 및 안정성
+        ```cpp
+        enum class TerrainType
+        {
+            Plain,    // 평지: 이동 비용 1
+            Forest,   // 숲: 이동 비용 2, 회피 +20
+            Mountain, // 산: 이동 비용 3, 회피 +30
+            Castle,   // 성: 이동 비용 1, 회피 +20, 방어 +2, 체력 회복
+            Village,  // 마을: 이동 비용 1, 회피 +10
+            Water,    // 물: 통과 불가
+            Wall      // 벽: 통과 불가
+        };
+        ```
 
-- Submit 시점과 실제 그리기 시점이 달라 **댕글링 포인터**로 렌더 깨짐 발생 → 임시 변수 대신 멤버·벡터 등 오래 사는 저장소 사용
-- 게임 종료 시 포인터 무효화되는 모든 코드 경로에 `if (gameOver) return;` 등 안전 처리
-- **메모리 누수**는 Visual Studio CRT 디버그 힙으로 원인 파악 후 재사용 버퍼로 해결
+### 2. 렌더링 및 좌표 시스템
 
-### 문서화
+*[이미지 PLACEHOLDER: 2x2 멀티라인 렌더링 - 타일·유닛이 2x2로 구분되어 보이는 맵 화면]*
 
-- DEBUG.md, Contexts.md, GameFlow.md로 버그 원인·해결, 구조·흐름 정리
+**구현 목적:** 콘솔 한 타일에 문자 하나만 그려지는 제약을 고려해, 지형·하이라이트·유닛이 겹치지 않도록 계층을 두고 시각적으로 구분 가능하게 하고자 함.
 
-## 문제 해결 과정
+**구현 내용:**
 
----
+```mermaid
+flowchart TD
+    subgraph layers["sortingOrder (숫자 ↑ = 위에 그려짐)"]
+        L7["7: 지형(평지)"]
+        L8["8: 이동범위 하이라이트"]
+        L9["9: 지형(기타)"]
+        L10["10: 유닛"]
+    end
+    L7 --> L8 --> L9 --> L10
+```
+
+- **sortingOrder**로 계층 설계(지형 7 &lt; 하이라이트 8 &lt; 지형 9 &lt; 유닛 10). Submit 시점과 그리기 시점이 달라도 올바른 순서로 렌더링되도록 함.
+- 2x2 멀티라인으로 타일·유닛을 시각적으로 구분함.
+- **그리드 좌표↔화면 좌표** 변환 공식 정리: 맵은 `baseX = x*2+1`, `baseY = y*2+1`, 마우스 입력은 `gridX = (mousePos.x-1)/2` 등으로 변환함.
+
+    - Renderer::RenderCommand  
+    그리기 우선순위를 담는 구조체임. sortingOrder 값으로 렌더 순서를 결정함.
+
+        ```cpp
+        struct RenderCommand
+        {
+            const char* text = nullptr;
+            Vector2 position;
+            Color color = Color::White;
+            int sortingOrder = 0;  // 7:지형(평지), 8:하이라이트, 9:지형(기타), 10:유닛
+        };
+        ```
+
+    - BattleLevel::DrawGrid  
+    2x2 그리드 좌표 변환 및 sortingOrder 적용 예시임.
+
+        ```cpp
+        // UI 공간 1칸 확보 + 2x2 그리드
+        int baseX = x * 2 + 1;
+        int baseY = y * 2 + 1;
+
+        // 렌더 우선순위 7 (평지), 9 (기타 지형)
+        if (tile->GetTerrainType() == TerrainType::Plain)
+        {
+            Renderer::Get().Submit(topLeft, Vector2(baseX, baseY), tile->GetDisplayColor(), 7);
+            // ...
+        }
+        else
+        {
+            Renderer::Get().Submit(topLeft, Vector2(baseX, baseY), tile->GetDisplayColor(), 9);
+            // ...
+        }
+        ```
+
+    - BattleLevel::OnMouseClick  
+    마우스 화면 좌표를 그리드 좌표로 변환함.
+
+        ```cpp
+        int gridX = (mousePos.x - 1) / 2;
+        int gridY = (mousePos.y - 1) / 2;
+        Vector2 gridPos(gridX, gridY);
+        ```
+
+### 3. 게임 로직 및 전투 시스템
+
+*[이미지 PLACEHOLDER: 전투 발생 화면 - 아군이 적을 공격하는 맵 상태 및 이벤트 로그]*
+
+**구현 목적:** 이동 가능 범위 계산, 최단 경로 탐색, 턴제 전투, 적 AI, 승패 판정을 구현하여 한 판이 완결되도록 함.
+
+**구현 내용:**
+- NavigationSystem 기반 A* 알고리즘으로 이동 경로 탐색. MovementCalculator로 지형 비용을 반영한 이동 가능 범위(Dijkstra) 계산함.
+- 턴제 전투: 데미지 계산, SPD 기반 2회 타격 로직 구현. 단순 적 AI로 인접 아군을 타겟으로 함.
+- `CheckEndConditions()`·`TriggerGameOver()`로 아군 전멸·군주 사망 시 패배, 적 전멸 시 승리 조건을 처리함.
+
+    - NavigationSystem::FindPath  
+    A* 알고리즘 핵심 루프. fCost 기준 우선순위 큐로 최단 경로 탐색함.
+
+        ```cpp
+        while (!openList.empty())
+        {
+            Node currentNode = openList.top();
+            openList.pop();
+
+            if (closedList.find(currentNode.position) != closedList.end())
+                continue;
+
+            closedList[currentNode.position] = currentNode;
+
+            if (currentNode.position == destination)
+            {
+                ConstructPath(currentNode, start, outPath);
+                break;
+            }
+
+            for (int i = 0; i < 4; ++i)
+            {
+                Vector2 nextPosition = currentNode.position + directions[i];
+                if (!IsValidPosition(nextPosition, map)) continue;
+
+                Node newNode(nextPosition, currentNode.position);
+                newNode.gCost = currentNode.gCost + 1.0f;
+                newNode.hCost = CalculateHeuristic(nextPosition, destination);
+                newNode.fCost = newNode.gCost + newNode.hCost;
+                openList.push(newNode);
+            }
+        }
+        ```
+
+    - MovementCalculator::CalculateReachableTiles  
+    Dijkstra로 지형 비용을 반영한 이동 가능 범위 계산함. `tile->GetMovementCost()`로 비용 누적함.
+
+        ```cpp
+        int newCost = current.cost + tile->GetMovementCost();
+        if (newCost > maxMovement) continue;
+
+        costMap[nextPos] = newCost;
+        openList.push({ nextPos, newCost });
+        ```
+
+    - BattleLevel::PerformCombat  
+    데미지 계산 및 SPD 기반 2회 타격 로직임.
+
+        ```cpp
+        int atk = attacker->GetStats().strength;
+        int def = defender->GetStats().defense;
+        int damagePerHit = (atk - def > 0) ? (atk - def) : 0;
+        bool doubleHit = attacker->GetStats().speed > defender->GetStats().speed;
+        int hits = doubleHit ? 2 : 1;
+        int totalDamage = damagePerHit * hits;
+        defender->TakeDamage(totalDamage);
+        ```
+
+    - BattleLevel::CheckEndConditions / TriggerGameOver  
+    아군 전멸·군주 사망 시 패배, 적 전멸 시 승리를 판정하고 게임 종료 처리함.
+
+        ```cpp
+        void BattleLevel::CheckEndConditions()
+        {
+            if (gameOver) return;
+
+            bool playerDefeated = playerUnits.empty() || !lordAlive;
+            if (playerDefeated) { TriggerGameOver(Faction::Enemy); return; }
+            if (enemyUnits.empty()) { TriggerGameOver(Faction::Player); }
+        }
+
+        void BattleLevel::TriggerGameOver(Faction winner)
+        {
+            gameOver = true;
+            gameOverWinner = winner;
+            // 그리드·유닛 목록 정리, 맵 타일 초기화 등
+        }
+        ```
+
+    - EnemyAI::RunAI  
+    인접 시 공격, 아니면 MovementCalculator·NavigationSystem으로 플레이어 인접 타일로 이동함.
+
+        ```cpp
+        // 인접 시 공격 후 턴 종료
+        for (Unit* playerUnit : playerUnits)
+        {
+            if (IsAdjacent(enemyPos, playerPos))
+            {
+                performCombat(enemy, playerUnit);
+                enemy->EndTurn();
+                return;
+            }
+        }
+        // 이동 가능 범위 계산 → A* 경로 탐색 → SetPath
+        movementCalculator.CalculateReachableTiles(...);
+        navigationSystem.FindPath(enemyPos, bestDestination, navMap, &path);
+        enemy->SetPath(path);
+        ```
+
+*[이미지 PLACEHOLDER: 게임 종료 화면 - PLAYER VICTORY 또는 ENEMY VICTORY 표시]*
+
+### 4. 메모리 및 안정성
+
+*[이미지 PLACEHOLDER: DEBUG.md 또는 CRT 디버그 힙 - 댕글링 포인터/메모리 누수 원인 기록 화면]*
+
+**구현 목적:** Submit 시점과 실제 그리기 시점이 달라 포인터 무효화·메모리 누수가 발생하지 않도록 안정적인 수명 관리와 누수 제거를 달성하고자 함.
+
+**구현 내용:**
+- 댕글링 포인터로 렌더 깨짐이 발생함. 원인은 그리기 시점에 이미 무효화된 포인터를 참조하는 것임. 임시 변수 대신 멤버·벡터 등 오래 사는 저장소를 사용하도록 수정함.
+- 게임 종료 시 포인터가 무효화되는 모든 코드 경로에 `if (gameOver) return;` 등 안전 처리를 추가함.
+- 메모리 누수는 Visual Studio CRT 디버그 힙으로 원인 파악 후 재사용 버퍼를 도입해 제거함. DEBUG.md에 원인과 해결 과정을 문서화함.
+
+    - BattleLevel::Tick  
+    게임 종료 시점 이후 로직 접근을 막기 위해 상단에 `if (gameOver) return;`을 둠.
+
+        ```cpp
+        void BattleLevel::Tick(float deltaTime)
+        {
+            Level::Tick(deltaTime);
+            if (gameOver) return;
+
+            // 플레이어 턴 / 적 턴 처리, 입력 처리 등
+            // ...
+        }
+        ```
+
+    - BattleLevel::ProcessPendingAttackAfterMove  
+    전투 수행 후 `TriggerGameOver`에서 이미 포인터를 무효화했으므로, 이후 접근 전에 `if (gameOver) return;`으로 조기 반환함.
+
+        ```cpp
+        PerformCombat(unitPendingAttack, attackTarget);
+        if (gameOver) return;  // 게임 종료 시 더 이상 접근하지 않음
+        unitPendingAttack->EndTurn();
+        unitPendingAttack = nullptr;
+        attackTarget = nullptr;
+        ```
+
+### 5. 문서화 및 AI context 활용
+
+*[이미지 PLACEHOLDER: DEBUG.md 또는 Contexts.md - 버그 원인·해결·구조 문서 화면]*
+
+**구현 목적:** AI 에이전트와 협업하면서 같은 실수를 반복하지 않기 위해, 버그 원인·해결·구조·흐름을 문서로 정리하고 이를 context로 활용할 수 있도록 함.
+
+**구현 내용:**
+- DEBUG.md: 댕글링 포인터·메모리 누수 원인 및 해결 과정 기록. 새 채팅에서 @파일 또는 문서 내용을 context로 넘겨 "이전에 이렇게 해결했다"는 정보를 주입할 수 있도록 함.
+- Contexts.md, GameFlow.md: 프로젝트 구조·흐름 정리. AI가 코드베이스를 이해하거나 구체적인 수정 지시를 받을 때 참고용 context로 활용함.
+
+## 트러블슈팅
 
 ### 댕글링 포인터로 인한 렌더 깨짐
 
-- Submit 시점과 실제 그리기 시점이 달라 렌더가 깨지는 문제를 발견했습니다.
-- 그리기 시점에 이미 무효화된 포인터를 참조하는 것이 원인임을 확인했습니다.
-- 임시 변수 대신 멤버·벡터 등 오래 사는 저장소를 사용하도록 수정했습니다.
-- 게임 종료 시 포인터가 무효화되는 모든 코드 경로에 `if (gameOver) return;` 등 안전 처리를 추가했습니다.
+- Submit 시점과 실제 그리기 시점이 달라 렌더가 깨지는 문제를 발견함.
+- 그리기 시점에 이미 무효화된 포인터를 참조하는 것이 원인임을 확인함.
+- 임시 변수 대신 멤버·벡터 등 오래 사는 저장소를 사용하도록 수정함.
+- 게임 종료 시 포인터가 무효화되는 모든 코드 경로에 안전 처리를 추가함.
 
 ### 메모리 누수
 
-- 게임 플레이 중 메모리 누수가 발생하는 문제를 발견했습니다.
-- Visual Studio CRT 디버그 힙으로 원인을 파악했습니다.
-- 재사용 버퍼를 도입해 누수를 제거했습니다.
-- DEBUG.md에 원인과 해결 과정을 문서화해 동일 유형 재발 시 참고할 수 있게 했습니다.
+- 게임 플레이 중 메모리 누수가 발생하는 문제를 발견함.
+- Visual Studio CRT 디버그 힙으로 원인을 파악함.
+- 재사용 버퍼를 도입해 누수를 제거함.
+- DEBUG.md에 원인과 해결 과정을 문서화함.
 
 ### 초기 계획 과다 및 범위 수렴
 
-- 원작에 가깝게 만들려다 계획이 커져 초반 3일을 허비했습니다.
-- "한 판이 돌아가는 턴제 전투"만 MVP로 고정하고, 전투 전용 UI는 맵 위 이벤트 로그로 대체하는 방식으로 범위를 줄여 수렴했습니다.
+- 원작에 가깝게 만들려다 계획이 커져 초반 3일을 허비함.
+- "한 판이 돌아가는 턴제 전투"만 MVP로 고정하고, 전투 전용 UI는 맵 위 이벤트 로그로 대체하는 방식으로 범위를 줄여 수렴함.
 
-## 성과 및 향후 계획
+## 보완할 점
 
----
-
-### 성과
-
-- MVP 범위 고정으로 한 판 완성: 필수 5요소만 남기고 전투 전용 UI는 로그로 대체해, 제한된 시간 안에 "돌아가는 턴제 전술 게임"으로 마무리했습니다.
-- 콘솔 제약 안에서 렌더·좌표 설계: sortingOrder와 2x2 멀티라인, 그리드↔화면 변환을 명확히 해 이동 범위·유닛이 잘 보이도록 했습니다.
-- 메모리 수명·누수 대응: 댕글링 포인터·게임 종료 시 크래시·프레임별 누수를 문서와 재사용 버퍼·안전 체크로 해결했습니다.
-- 문서화: DEBUG.md, Contexts.md, GameFlow.md로 버그 원인·해결, 구조·흐름을 정리해 동일 유형 재발 시 참고 가능하게 했습니다.
-
-### 개선할 사항
-
-- 전투 전용 UI 미구현: 별도 전투 화면·연출 없이 맵 위 로그로만 전투 결과 표시. 시각적 완성도는 낮음.
-- 한 파일에 로직 집중: 후반에는 BattleLevel 한 파일에 로직이 몰려 가독성·확장성에 아쉬움. 문서로 구조를 보완했으나 코드 분리·리팩터링이 필요함.
+- 전투 전용 UI 미구현: 별도 전투 화면·연출 없이 맵 위 로그로만 전투 결과 표시함. 시각적 완성도는 낮음.
+- 한 파일에 로직 집중: 후반에는 BattleLevel 한 파일에 로직이 몰려 가독성·확장성에 아쉬움. 코드 분리·리팩터링이 필요함.
 - ASCII 아트 미적용: 텍스트 위주 표현만 사용해 박스 문자·기호 등 시각적 연출은 보류함.
 - 엣지 케이스 버그: 게임 종료 시 크래시 등 일부 상황에서 버그가 있었고, 수동 테스트 위주라 미발견 케이스가 남을 수 있음.
+
+## 프로젝트 성과
+
+- MVP 범위 고정으로 한 판 완성: 필수 5요소만 남기고 전투 전용 UI는 로그로 대체해, 제한된 시간 안에 "돌아가는 턴제 전술 게임"으로 마무리함.
+- 콘솔 제약 안에서 렌더·좌표 설계: sortingOrder와 2x2 멀티라인, 그리드↔화면 변환을 명확히 해 이동 범위·유닛이 잘 보이도록 함.
+- 메모리 수명·누수 대응: 댕글링 포인터·게임 종료 시 크래시·프레임별 누수를 문서와 재사용 버퍼·안전 체크로 해결함.
+- 문서화 및 AI context 활용: DEBUG.md, Contexts.md, GameFlow.md로 버그 원인·해결·구조·흐름을 정리하고, AI 에이전트 협업 시 같은 실수를 반복하지 않도록 context로 활용함.
 
 ## 상세 회고
 
