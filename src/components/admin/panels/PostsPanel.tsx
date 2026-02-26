@@ -3,10 +3,11 @@
  *
  * 블로그 포스트 목록 조회, 생성, 편집, 삭제, 발행/초안 전환을 담당한다.
  * - 목록 화면과 편집 화면을 같은 패널 내에서 전환한다.
- * - 마크다운 편집은 기본 textarea 사용 (미리보기는 우측 컬럼).
+ * - 마크다운 편집 시 좌측 에디터 + 우측 라이브 미리보기 (Keystatic/Notion 스타일).
  */
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { browserClient } from "@/lib/supabase";
+import { renderMarkdownPreview } from "@/lib/markdown-preview";
 
 // 포스트 행 타입 (Supabase posts 테이블)
 interface Post {
@@ -181,9 +182,14 @@ export default function PostsPanel() {
     };
 
     // ── 편집 화면 ────────────────────────────────────────────
+    const previewHtml = useMemo(
+        () => renderMarkdownPreview(form.content),
+        [form.content]
+    );
+
     if (editTarget !== null) {
         return (
-            <div className="max-w-4xl">
+            <div className="w-full max-w-6xl">
                 <div className="flex items-center gap-3 mb-6">
                     <button
                         onClick={() => setEditTarget(null)}
@@ -330,22 +336,42 @@ export default function PostsPanel() {
                         />
                     </div>
 
-                    {/* 본문 마크다운 */}
+                    {/* 본문 마크다운: 좌측 에디터 + 우측 라이브 미리보기 */}
                     <div>
                         <label className="block text-sm font-medium text-(--color-muted) mb-1">
                             본문 (Markdown)
                         </label>
-                        <textarea
-                            value={form.content}
-                            onChange={(e) =>
-                                setForm((f) => ({
-                                    ...f,
-                                    content: e.target.value,
-                                }))
-                            }
-                            rows={20}
-                            className="w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-surface) text-(--color-foreground) text-sm font-mono focus:outline-none focus:ring-2 focus:ring-(--color-accent)/40 resize-y"
-                        />
+                        <div className="grid grid-cols-1 tablet:grid-cols-2 gap-4 border border-(--color-border) rounded-xl overflow-hidden bg-(--color-surface-subtle)">
+                            <div className="flex flex-col min-h-[320px]">
+                                <div className="px-3 py-2 border-b border-(--color-border) text-xs font-medium text-(--color-muted) shrink-0">
+                                    에디터
+                                </div>
+                                <textarea
+                                    value={form.content}
+                                    onChange={(e) =>
+                                        setForm((f) => ({
+                                            ...f,
+                                            content: e.target.value,
+                                        }))
+                                    }
+                                    placeholder="# 제목&#10;&#10;본문을 작성하세요..."
+                                    className="flex-1 min-h-[280px] w-full px-4 py-3 bg-(--color-surface) text-(--color-foreground) text-sm font-mono focus:outline-none focus:ring-2 focus:ring-(--color-accent)/40 resize-none"
+                                />
+                            </div>
+                            <div className="flex flex-col min-h-[320px]">
+                                <div className="px-3 py-2 border-b border-(--color-border) text-xs font-medium text-(--color-muted) shrink-0">
+                                    미리보기
+                                </div>
+                                <div
+                                    className="flex-1 min-h-[280px] overflow-y-auto px-4 py-3 prose prose-sm dark:prose-invert max-w-none text-(--color-foreground) admin-preview-body"
+                                    dangerouslySetInnerHTML={{
+                                        __html:
+                                            previewHtml ||
+                                            '<p class="text-(--color-muted)">미리보기가 여기에 표시됩니다.</p>',
+                                    }}
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     {/* 발행 여부 */}

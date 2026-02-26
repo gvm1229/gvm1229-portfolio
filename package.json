@@ -21,6 +21,7 @@
         "@astrojs/markdoc": "^0.15.10",
         "@astrojs/react": "^4.4.2",
         "@markdoc/markdoc": "^0.4.0",
+        "marked": "^15.0.7",
         "@shikijs/rehype": "^3.7.0",
         "@supabase/supabase-js": "^2.93.3",
         "astro": "^5.17.1",

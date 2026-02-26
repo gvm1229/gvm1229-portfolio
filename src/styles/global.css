@@ -379,3 +379,20 @@ body {
 .resume-layout.hidden {
     display: none;
 }
+
+/* Admin 마크다운 미리보기: 커스텀 태그 플레이스홀더 */
+.admin-preview-body .preview-placeholder {
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    background: var(--color-surface-subtle);
+    border: 1px dashed var(--color-border);
+    color: var(--color-muted);
+    font-size: 0.875rem;
+    margin: 0.5rem 0;
+}
+.admin-preview-body .preview-folium-table {
+    font-weight: 500;
+}
+.admin-preview-body .preview-youtube {
+    font-weight: 500;
+}
