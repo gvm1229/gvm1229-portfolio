@@ -9,6 +9,8 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import { browserClient } from "@/lib/supabase";
 import { renderMarkdownPreview } from "@/lib/markdown-preview";
 import MarkdownBlockInserter from "@/components/admin/MarkdownBlockInserter";
+import TagSelector from "@/components/admin/TagSelector";
+import CategorySelect from "@/components/admin/CategorySelect";
 
 // 포스트 행 타입 (Supabase posts 테이블)
 interface Post {
@@ -262,41 +264,40 @@ export default function PostsPanel() {
                     </div>
 
                     {/* 카테고리 + 태그 */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 tablet:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-(--color-muted) mb-1">
                                 카테고리
                             </label>
-                            <input
-                                type="text"
+                            <CategorySelect
                                 value={form.category}
-                                onChange={(e) =>
+                                onChange={(v) =>
                                     setForm((f) => ({
                                         ...f,
-                                        category: e.target.value,
+                                        category: v,
                                     }))
                                 }
-                                className="w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-surface) text-(--color-foreground) text-sm focus:outline-none focus:ring-2 focus:ring-(--color-accent)/40"
+                                options={[
+                                    ...new Set(
+                                        posts
+                                            .map((p) => p.category)
+                                            .filter(
+                                                (c): c is string => !!c?.trim()
+                                            )
+                                    ),
+                                ]}
+                                placeholder="선택 또는 새로 입력"
                             />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-(--color-muted) mb-1">
-                                태그{" "}
-                                <span className="text-xs text-(--color-muted)">
-                                    (쉼표 구분)
-                                </span>
+                                태그
                             </label>
-                            <input
-                                type="text"
+                            <TagSelector
                                 value={form.tags}
-                                onChange={(e) =>
-                                    setForm((f) => ({
-                                        ...f,
-                                        tags: e.target.value,
-                                    }))
+                                onChange={(v) =>
+                                    setForm((f) => ({ ...f, tags: v }))
                                 }
-                                placeholder="tag1, tag2, tag3"
-                                className="w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-surface) text-(--color-foreground) text-sm focus:outline-none focus:ring-2 focus:ring-(--color-accent)/40"
                             />
                         </div>
                     </div>
