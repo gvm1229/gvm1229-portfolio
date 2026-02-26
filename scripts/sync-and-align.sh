@@ -4,9 +4,8 @@
 PARENT_DIR="../FoliumOnline"
 CHILD_DIR="."
 
-# 인자 처리 로직 (기존 단일 해시 지원 유지 + since 기능 추가)
+# 인자 처리 로직 (단일 해시 및 since 범위 지원)
 if [ "$1" == "since" ] && [ -n "$2" ]; then
-    # 지정된 커밋부터 현재 HEAD까지의 모든 해시를 가져옴 (해당 커밋 포함)
     CHILD_COMMIT_HASH=$(git rev-list --reverse $2^..HEAD)
     echo "🎯 [범위 커밋 사용] $2 부터 현재까지의 모든 commit을 FoliumOnline로 전파합니다."
 elif [ -n "$1" ]; then
@@ -17,66 +16,28 @@ else
     echo "🚀 [워크플로우 시작] 현재 commit($CHILD_COMMIT_HASH)을 FoliumOnline로 전파합니다."
 fi
 
-# --- STEP 0: 자식 저장소 혹시 모를 변경사항 저장 ---
-# git stash
-# echo "📦 0. 자식 저장소의 변경사항을 임시 저장(Stash)합니다."
-
 # --- STEP 1: FoliumOnline 저장소 로컬 최신화 ---
 echo "📡 1. FoliumOnline 저장소(FoliumOnline) 상태 점검 및 최신화..."
 cd "$PARENT_DIR" || exit
-git fetch origin          # FoliumOnline 원격의 모든 브랜치 정보를 가져옴
-git switch main
-git pull origin main      # FoliumOnline 로컬 main 최신화
+git fetch origin
 git switch develop
-git pull origin develop   # FoliumOnline 로컬 develop 최신화
+git pull origin develop
 
-# --- STEP 2: Parent Develop으로 cherry-pick 및 푸시 ---
-echo "📂 2. FoliumOnline 저장소 develop에 gvm1229-portfolio의 변경사항 반영 중중..."
+# --- STEP 2: Parent Develop으로 cherry-pick 및 푸시 (날짜 보존) ---
+echo "📂 2. FoliumOnline 저장소 develop에 변경사항 반영 및 푸시..."
 git fetch "$OLDPWD" develop
-# CHILD_COMMIT_HASH가 여러 개일 경우를 대비해 반복문 없이 공백 구분자로 전달 (git이 순차 처리)
-git cherry-pick $CHILD_COMMIT_HASH
+
+# GitHub 타임라인을 유지하기 위해 Author Date를 Committer Date에 강제 적용
+for rev in $CHILD_COMMIT_HASH; do
+    # 해당 커밋의 원래 Author Date를 추출
+    AUTH_DATE=$(git log -1 --format=%ai $rev)
+    
+    # GIT_COMMITTER_DATE를 Author Date와 일치시켜 GitHub 히스토리 꼬임 방지
+    GIT_COMMITTER_DATE="$AUTH_DATE" git cherry-pick $rev
+done
+
+# 부모 저장소의 원격 develop 브랜치에 반영
 git push origin develop
 
-# --- STEP 3: Parent Develop -> Parent Main 병합 ---
-echo "🔄 3. FoliumOnline 저장소: develop -> main 병합 중..."
-git switch main
-MERGE_MSG="merge: [Merge from FoliumTea/develop] 업데이트 반영"
-git merge develop --no-ff -m "$MERGE_MSG"
-git push origin main
-
-# --- STEP 4: Child Main 업데이트 ---
-echo "📂 4. gvm1229-portfolio 저장소 이동 및 main 업데이트..."
-cd "../gvm1229-portfolio" || exit
-git switch main
-git pull upstream main
-
-# --- STEP 5: Child Develop rebase (에러 핸들링 강화) ---
-echo "🛠 5. gvm1229-portfolio 저장소: develop을 main 기반으로 rebase 중..."
-git switch develop
-
-# rebase 시도 전 작업 내역(Unstaged Changes)이 있는지 확인
-if [[ -n $(git status --porcelain | grep -E "^(M| M|A| A|D| D)") ]]; then
-    echo "❌ [중단] rebase를 할 수 없습니다: gvm1229-portfolio 저장소에 commit 되거나 stash 되지 않은 변경사항이 있습니다."
-    echo "작업 내용을 commit 하거나 'git stash'를 실행한 후 다시 시도해 주세요."
-    exit 1
-fi
-
-# rebase 실행
-git rebase main --committer-date-is-author-date
-# rebase 이후에는 무조건 force push
-git push origin develop --force
-
-REBASE_RESULT=$?
-
-if [ $REBASE_RESULT -eq 0 ]; then
-    echo "✨ [완료] 모든 워크플로우가 성공적으로 끝났습니다."
-    echo "현재 위치: gvm1229-portfolio/develop (구조 동기화 및 기록 정렬 완료)"
-
-    # 자식 저장소 기존 작업물 복구
-    git stash pop
-    echo "📦 [완료] 자식 저장소의 변경사항을 복구(Stash Pop)합니다."
-else
-    echo "❌ [오류] rebase 중 충돌이 발생했습니다."
-    echo "수동으로 충돌을 해결한 후 'git rebase --continue'를 입력하거나, 'git rebase --abort'로 취소하세요."
-    exit 1
-fi
+echo "✨ [완료] 부모 저장소(FoliumOnline/develop)로의 전파가 끝났습니다."
+echo "⚠️ 이후 과정(Main 병합 및 자식 동기화)은 수동으로 진행해 주세요."
