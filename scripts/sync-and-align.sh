@@ -4,13 +4,22 @@
 PARENT_DIR="../FoliumOnline"
 CHILD_DIR="."
 
-# gvm1229-portfolio 저장소의 최신 commit 정보 저장
-CHILD_COMMIT_HASH=$(git rev-parse HEAD)
-echo "🚀 [워크플로우 시작] 현재 commit($CHILD_COMMIT_HASH)을 FoliumOnline로 전파합니다."
+# 인자 처리 로직 (기존 단일 해시 지원 유지 + since 기능 추가)
+if [ "$1" == "since" ] && [ -n "$2" ]; then
+    # 지정된 커밋부터 현재 HEAD까지의 모든 해시를 가져옴 (해당 커밋 포함)
+    CHILD_COMMIT_HASH=$(git rev-list --reverse $2^..HEAD)
+    echo "🎯 [범위 커밋 사용] $2 부터 현재까지의 모든 commit을 FoliumOnline로 전파합니다."
+elif [ -n "$1" ]; then
+    CHILD_COMMIT_HASH=$1
+    echo "🎯 [입력된 커밋 사용] 지정된 해시($CHILD_COMMIT_HASH)를 FoliumOnline로 전파합니다."
+else
+    CHILD_COMMIT_HASH=$(git rev-parse HEAD)
+    echo "🚀 [워크플로우 시작] 현재 commit($CHILD_COMMIT_HASH)을 FoliumOnline로 전파합니다."
+fi
 
 # --- STEP 0: 자식 저장소 혹시 모를 변경사항 저장 ---
-git stash
-echo "📦 0. 자식 저장소의 변경사항을 임시 저장(Stash)합니다."
+# git stash
+# echo "📦 0. 자식 저장소의 변경사항을 임시 저장(Stash)합니다."
 
 # --- STEP 1: FoliumOnline 저장소 로컬 최신화 ---
 echo "📡 1. FoliumOnline 저장소(FoliumOnline) 상태 점검 및 최신화..."
@@ -24,7 +33,8 @@ git pull origin develop   # FoliumOnline 로컬 develop 최신화
 # --- STEP 2: Parent Develop으로 cherry-pick 및 푸시 ---
 echo "📂 2. FoliumOnline 저장소 develop에 gvm1229-portfolio의 변경사항 반영 중중..."
 git fetch "$OLDPWD" develop
-git cherry-pick "$CHILD_COMMIT_HASH"
+# CHILD_COMMIT_HASH가 여러 개일 경우를 대비해 반복문 없이 공백 구분자로 전달 (git이 순차 처리)
+git cherry-pick $CHILD_COMMIT_HASH
 git push origin develop
 
 # --- STEP 3: Parent Develop -> Parent Main 병합 ---
