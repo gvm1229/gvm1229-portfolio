@@ -4,9 +4,10 @@
  * 포트폴리오 아이템 목록 조회, 생성, 편집, 삭제,
  * featured 토글 및 발행/초안 전환을 담당한다.
  */
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { browserClient } from "@/lib/supabase";
 import { renderMarkdownPreview } from "@/lib/markdown-preview";
+import MarkdownBlockInserter from "@/components/admin/MarkdownBlockInserter";
 
 interface PortfolioItem {
     id: string;
@@ -106,6 +107,7 @@ export default function PortfolioPanel() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+    const contentCursorRef = useRef<number | null>(null);
 
     const loadItems = async () => {
         if (!browserClient) return;
@@ -311,8 +313,21 @@ export default function PortfolioPanel() {
                         </label>
                         <div className="grid grid-cols-1 tablet:grid-cols-2 gap-4 border border-(--color-border) rounded-xl overflow-hidden bg-(--color-surface-subtle)">
                             <div className="flex flex-col min-h-[320px]">
-                                <div className="px-3 py-2 border-b border-(--color-border) text-xs font-medium text-(--color-muted) shrink-0">
-                                    에디터
+                                <div className="px-3 py-2 border-b border-(--color-border) flex items-center justify-between shrink-0">
+                                    <span className="text-xs font-medium text-(--color-muted)">
+                                        에디터
+                                    </span>
+                                    <MarkdownBlockInserter
+                                        content={form.content}
+                                        onContentChange={(c) =>
+                                            setForm((f) => ({
+                                                ...f,
+                                                content: c,
+                                            }))
+                                        }
+                                        cursorPositionRef={contentCursorRef}
+                                        className="shrink-0"
+                                    />
                                 </div>
                                 <textarea
                                     value={form.content}
@@ -322,6 +337,16 @@ export default function PortfolioPanel() {
                                             content: e.target.value,
                                         }))
                                     }
+                                    onSelect={(e) => {
+                                        contentCursorRef.current =
+                                            (e.target as HTMLTextAreaElement)
+                                                .selectionStart ?? null;
+                                    }}
+                                    onClick={(e) => {
+                                        contentCursorRef.current =
+                                            (e.target as HTMLTextAreaElement)
+                                                .selectionStart ?? null;
+                                    }}
                                     placeholder="# 프로젝트 개요&#10;&#10;본문을 작성하세요..."
                                     className="flex-1 min-h-[280px] w-full px-4 py-3 bg-(--color-surface) text-(--color-foreground) text-sm font-mono focus:outline-none focus:ring-2 focus:ring-(--color-accent)/40 resize-none"
                                 />

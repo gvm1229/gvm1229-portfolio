@@ -5,9 +5,10 @@
  * - 목록 화면과 편집 화면을 같은 패널 내에서 전환한다.
  * - 마크다운 편집 시 좌측 에디터 + 우측 라이브 미리보기 (Keystatic/Notion 스타일).
  */
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { browserClient } from "@/lib/supabase";
 import { renderMarkdownPreview } from "@/lib/markdown-preview";
+import MarkdownBlockInserter from "@/components/admin/MarkdownBlockInserter";
 
 // 포스트 행 타입 (Supabase posts 테이블)
 interface Post {
@@ -67,6 +68,7 @@ export default function PostsPanel() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+    const contentCursorRef = useRef<number | null>(null);
 
     // 포스트 목록 로드 (인증된 어드민이므로 draft 포함 전체 조회)
     const loadPosts = async () => {
@@ -343,8 +345,21 @@ export default function PostsPanel() {
                         </label>
                         <div className="grid grid-cols-1 tablet:grid-cols-2 gap-4 border border-(--color-border) rounded-xl overflow-hidden bg-(--color-surface-subtle)">
                             <div className="flex flex-col min-h-[320px]">
-                                <div className="px-3 py-2 border-b border-(--color-border) text-xs font-medium text-(--color-muted) shrink-0">
-                                    에디터
+                                <div className="px-3 py-2 border-b border-(--color-border) flex items-center justify-between shrink-0">
+                                    <span className="text-xs font-medium text-(--color-muted)">
+                                        에디터
+                                    </span>
+                                    <MarkdownBlockInserter
+                                        content={form.content}
+                                        onContentChange={(c) =>
+                                            setForm((f) => ({
+                                                ...f,
+                                                content: c,
+                                            }))
+                                        }
+                                        cursorPositionRef={contentCursorRef}
+                                        className="shrink-0"
+                                    />
                                 </div>
                                 <textarea
                                     value={form.content}
@@ -354,6 +369,16 @@ export default function PostsPanel() {
                                             content: e.target.value,
                                         }))
                                     }
+                                    onSelect={(e) => {
+                                        contentCursorRef.current =
+                                            (e.target as HTMLTextAreaElement)
+                                                .selectionStart ?? null;
+                                    }}
+                                    onClick={(e) => {
+                                        contentCursorRef.current =
+                                            (e.target as HTMLTextAreaElement)
+                                                .selectionStart ?? null;
+                                    }}
                                     placeholder="# 제목&#10;&#10;본문을 작성하세요..."
                                     className="flex-1 min-h-[280px] w-full px-4 py-3 bg-(--color-surface) text-(--color-foreground) text-sm font-mono focus:outline-none focus:ring-2 focus:ring-(--color-accent)/40 resize-none"
                                 />
