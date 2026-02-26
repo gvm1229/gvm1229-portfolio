@@ -3,7 +3,7 @@
  *
  * about_data 테이블에서 About 데이터를 불러와 편집하고
  * Supabase에 저장한다. 저장 즉시 프론트엔드에 반영된다.
- * 기존 AboutAdminForm 로직을 Supabase 저장 방식으로 교체한 것이다.
+ * Supabase about_data 테이블에 저장한다.
  */
 import { useEffect, useRef, useState } from "react";
 import { browserClient } from "@/lib/supabase";
