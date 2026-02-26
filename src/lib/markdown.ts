@@ -171,10 +171,15 @@ function renderNode(node: RenderableTreeNode): string {
         return renderYouTube(attributes as Record<string, unknown>);
 
     // 코드 펜스: fence 노드 오버라이드로 FenceBlock 출력 → Shiki가 기대하는 pre > code.language-x
+    // mermaid: Shiki가 구조를 바꿔 client 렌더가 못 찾으므로, data-mermaid-definition div로 출력 (Shiki 비처리)
     if (name === "FenceBlock") {
-        const lang = esc(String(attributes.language ?? ""));
-        const code = esc(String(attributes.content ?? ""));
-        return `<pre><code class="language-${lang}">${code}</code></pre>`;
+        const lang = String(attributes.language ?? "").toLowerCase();
+        const code = String(attributes.content ?? "");
+        if (lang === "mermaid") {
+            const encoded = Buffer.from(code, "utf-8").toString("base64");
+            return `<div class="mermaid-pending" data-mermaid-definition="${esc(encoded)}"></div>`;
+        }
+        return `<pre><code class="language-${esc(lang)}">${esc(code)}</code></pre>`;
     }
 
     const childrenHtml = children.map(renderNode).join("");

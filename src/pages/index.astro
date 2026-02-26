@@ -12,6 +12,11 @@ import {
     formatPubDateKST,
 } from "@/lib/blog";
 
+// 포트폴리오 프로젝트 최대 표시 수
+const PORTFOLIO_PROJ_MAX_NUM = 4;
+// 블로그 포스트 최대 표시 수
+const BLOG_POST_MAX_NUM = 5;
+
 // ── About 미리보기 ────────────────────────────────────────────
 interface AboutData {
     name?: string;
@@ -44,7 +49,7 @@ if (serverClient) {
         .eq("published", true)
         .eq("featured", true)
         .order("order_idx", { ascending: true })
-        .limit(3);
+        .limit(PORTFOLIO_PROJ_MAX_NUM);
     if (data) featuredItems = data as FeaturedItem[];
 }
 
@@ -67,7 +72,7 @@ if (serverClient) {
         )
         .eq("published", true)
         .order("pub_date", { ascending: false })
-        .limit(5);
+        .limit(BLOG_POST_MAX_NUM);
     if (data) {
         latestPosts = data.map((p) => {
             const body: string = p.content ?? "";
@@ -363,14 +368,6 @@ const isDev = import.meta.env.DEV;
                         class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-(--color-border) bg-(--color-surface) text-(--color-foreground) text-sm font-medium hover:opacity-90 transition-opacity"
                     >
                         Admin
-                    </a>
-                    <a
-                        href="/keystatic"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-(--color-accent) text-(--color-on-accent) text-sm font-medium hover:opacity-90 transition-opacity"
-                    >
-                        Write post
                     </a>
                 </div>
             </section>
