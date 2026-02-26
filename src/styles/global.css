@@ -267,7 +267,7 @@ body {
 .prose h2[id],
 .prose h3[id],
 .prose h4[id] {
-    scroll-margin-top: 6rem;
+    scroll-margin-top: 5rem;
 }
 
 /* 헤딩 내 앵커 링크: 밑줄 제거 (rehype-autolink-headings) */
