@@ -163,7 +163,7 @@ export default function AboutPanel() {
                         type="text"
                         value={profileImage}
                         onChange={(e) => setProfileImage(e.target.value)}
-                        placeholder="/images/profile.jpg"
+                        placeholder="https://urqqfjxocxfrvuozgobi.supabase.co/storage/v1/object/public/images/legacy/profile-780d2697.webp"
                         className={inputCls}
                     />
                 </div>
