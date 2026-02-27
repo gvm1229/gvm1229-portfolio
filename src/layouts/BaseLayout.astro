@@ -12,10 +12,10 @@ import ThemeLoader from "@/components/ThemeLoader";
 interface Props {
     title?: string;
     description?: string;
+    image?: string;
 }
 
-const { title = "FoliumOnline", description = "포트폴리오 & 기술 블로그" } =
-    Astro.props;
+const { title, description, image } = Astro.props;
 
 // PUBLIC_COLOR_SCHEME env (blue | gray | beige | blackwhite), 기본 gray
 const colorScheme = (import.meta.env.PUBLIC_COLOR_SCHEME ?? "gray") as string;
