@@ -41,3 +41,4 @@ git push origin develop
 
 echo "✨ [완료] 부모 저장소(FoliumOnline/develop)로의 전파가 끝났습니다."
 echo "⚠️ 이후 과정(Main 병합 및 자식 동기화)은 수동으로 진행해 주세요."
+echo "⚠️ 원활한 rebase 를 위해 develop 브랜치에서의 push 는 하지 말아주세요."
