@@ -6,6 +6,8 @@
  */
 import { useEffect, useState } from "react";
 import { browserClient } from "@/lib/supabase";
+import RichMarkdownEditor from "@/components/admin/RichMarkdownEditor";
+import ThumbnailUploadField from "@/components/admin/ThumbnailUploadField";
 
 interface PortfolioItem {
     id: string;
@@ -219,7 +221,7 @@ export default function PortfolioPanel() {
             }
         ) => (
             <div>
-                <label className="block text-sm font-medium text-(--color-muted) mb-1">
+                <label className="block text-base font-medium text-(--color-muted) mb-1">
                     {label}
                 </label>
                 {opts?.rows ? (
@@ -230,7 +232,7 @@ export default function PortfolioPanel() {
                         }
                         rows={opts.rows}
                         placeholder={opts.placeholder}
-                        className={`w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-surface) text-(--color-foreground) text-sm focus:outline-none focus:ring-2 focus:ring-(--color-accent)/40 resize-y ${opts.mono ? "font-mono" : ""}`}
+                        className={`w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-surface) text-(--color-foreground) text-base focus:outline-none focus:ring-2 focus:ring-(--color-accent)/40 resize-y ${opts.mono ? "font-mono" : ""}`}
                     />
                 ) : (
                     <input
@@ -240,29 +242,25 @@ export default function PortfolioPanel() {
                             setForm((f) => ({ ...f, [key]: e.target.value }))
                         }
                         placeholder={opts?.placeholder}
-                        className={`w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-surface) text-(--color-foreground) text-sm focus:outline-none focus:ring-2 focus:ring-(--color-accent)/40 ${opts?.mono ? "font-mono" : ""}`}
+                        className={`w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-surface) text-(--color-foreground) text-base focus:outline-none focus:ring-2 focus:ring-(--color-accent)/40 ${opts?.mono ? "font-mono" : ""}`}
                     />
                 )}
             </div>
         );
 
         return (
-            <div className="max-w-3xl">
-                <div className="flex items-center gap-3 mb-6">
-                    <button
-                        onClick={() => setEditTarget(null)}
-                        className="text-sm text-(--color-muted) hover:text-(--color-foreground)"
-                    >
-                        ← 목록
-                    </button>
-                    <h2 className="text-xl font-bold text-(--color-foreground)">
-                        {editTarget === "new"
-                            ? "새 포트폴리오"
-                            : "포트폴리오 편집"}
-                    </h2>
-                </div>
+            <div className="w-full max-w-5xl">
+                <button
+                    onClick={() => setEditTarget(null)}
+                    className="text-lg text-(--color-muted) bg-(--color-surface-subtle) px-3 py-2 rounded-lg border border-(--color-border) hover:text-(--color-foreground) hover:bg-(--color-surface-subtle) hover:border-(--color-accent) transition-colors"
+                >
+                    ← 목록
+                </button>
+                <h2 className="mt-6 text-3xl font-bold text-(--color-foreground)">
+                    {editTarget === "new" ? "새 포트폴리오" : "포트폴리오 편집"}
+                </h2>
 
-                <div className="space-y-4">
+                <div className="mt-6 space-y-4">
                     {field("title", "제목 *")}
                     <div className="grid grid-cols-2 gap-4">
                         {field("slug", "Slug *", { mono: true })}
@@ -272,10 +270,13 @@ export default function PortfolioPanel() {
                     {field("tags", "키워드/태그 (쉼표 구분)", {
                         placeholder: "Next.js, React, TypeScript",
                     })}
-                    {field("thumbnail", "썸네일 URL", {
-                        mono: true,
-                        placeholder: "/images/portfolio/...",
-                    })}
+                    <ThumbnailUploadField
+                        value={form.thumbnail}
+                        onChange={(url) =>
+                            setForm((f) => ({ ...f, thumbnail: url }))
+                        }
+                        placeholder="파일 업로드 또는 URL 입력"
+                    />
 
                     <div className="grid grid-cols-2 gap-4">
                         {field("startDate", "시작일", {
@@ -299,10 +300,18 @@ export default function PortfolioPanel() {
                         {field("github", "GitHub URL", { mono: true })}
                         {field("liveUrl", "라이브 URL", { mono: true })}
                     </div>
-                    {field("content", "본문 (Markdown)", {
-                        rows: 16,
-                        mono: true,
-                    })}
+                    <div>
+                        <label className="block text-base font-medium text-(--color-muted) mb-1">
+                            본문 (Markdown)
+                        </label>
+                        <RichMarkdownEditor
+                            value={form.content}
+                            onChange={(c) =>
+                                setForm((f) => ({ ...f, content: c }))
+                            }
+                            placeholder="본문을 작성하세요. ## 제목, **굵게** 등 마크다운 문법이 즉시 반영됩니다."
+                        />
+                    </div>
                     <div className="grid grid-cols-2 gap-4">
                         <label className="flex items-center gap-2 cursor-pointer">
                             <input
@@ -316,7 +325,7 @@ export default function PortfolioPanel() {
                                 }
                                 className="w-4 h-4 accent-(--color-accent)"
                             />
-                            <span className="text-sm font-medium text-(--color-foreground)">
+                            <span className="text-base font-medium text-(--color-foreground)">
                                 랜딩 페이지에 노출 (featured)
                             </span>
                         </label>
@@ -332,19 +341,19 @@ export default function PortfolioPanel() {
                                 }
                                 className="w-4 h-4 accent-(--color-accent)"
                             />
-                            <span className="text-sm font-medium text-(--color-foreground)">
+                            <span className="text-base font-medium text-(--color-foreground)">
                                 발행
                             </span>
                         </label>
                     </div>
 
                     {error && (
-                        <p className="text-sm text-red-500 bg-red-50 dark:bg-red-950/30 px-3 py-2 rounded-lg">
+                        <p className="text-base text-red-500 bg-red-50 dark:bg-red-950/30 px-3 py-2 rounded-lg">
                             {error}
                         </p>
                     )}
                     {success && (
-                        <p className="text-sm text-green-600 bg-green-50 dark:bg-green-950/30 px-3 py-2 rounded-lg">
+                        <p className="text-base text-green-600 bg-green-50 dark:bg-green-950/30 px-3 py-2 rounded-lg">
                             {success}
                         </p>
                     )}
@@ -353,13 +362,13 @@ export default function PortfolioPanel() {
                         <button
                             onClick={handleSave}
                             disabled={saving}
-                            className="px-5 py-2 rounded-lg bg-(--color-accent) text-(--color-on-accent) text-sm font-semibold hover:opacity-90 disabled:opacity-50"
+                            className="px-5 py-2 rounded-lg bg-(--color-accent) text-(--color-on-accent) text-base font-semibold hover:opacity-90 disabled:opacity-50"
                         >
                             {saving ? "저장 중..." : "저장"}
                         </button>
                         <button
                             onClick={() => setEditTarget(null)}
-                            className="px-5 py-2 rounded-lg border border-(--color-border) text-sm font-medium text-(--color-muted) hover:text-(--color-foreground)"
+                            className="px-5 py-2 rounded-lg border border-(--color-border) text-base font-medium text-(--color-muted) hover:text-(--color-foreground)"
                         >
                             취소
                         </button>
@@ -373,20 +382,20 @@ export default function PortfolioPanel() {
     return (
         <div>
             <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-(--color-foreground)">
+                <h2 className="text-2xl font-bold text-(--color-foreground)">
                     포트폴리오
                 </h2>
                 <button
                     onClick={openNew}
-                    className="px-4 py-2 rounded-lg bg-(--color-accent) text-(--color-on-accent) text-sm font-semibold hover:opacity-90"
+                    className="px-4 py-2 rounded-lg bg-(--color-accent) text-(--color-on-accent) text-base font-semibold hover:opacity-90"
                 >
                     + 새 항목
                 </button>
             </div>
 
-            {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
+            {error && <p className="text-base text-red-500 mb-4">{error}</p>}
             {loading ? (
-                <p className="text-sm text-(--color-muted)">불러오는 중...</p>
+                <p className="text-base text-(--color-muted)">불러오는 중...</p>
             ) : (
                 <div className="space-y-2">
                     {items.map((item) => (
@@ -397,27 +406,27 @@ export default function PortfolioPanel() {
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-0.5">
                                     {item.featured && (
-                                        <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 font-medium">
+                                        <span className="text-sm px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 font-medium">
                                             ★ featured
                                         </span>
                                     )}
                                     <span
-                                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${item.published ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400" : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400"}`}
+                                        className={`text-sm px-2 py-0.5 rounded-full font-medium ${item.published ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400" : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400"}`}
                                     >
                                         {item.published ? "발행" : "초안"}
                                     </span>
                                 </div>
-                                <p className="text-sm font-semibold text-(--color-foreground) truncate">
+                                <p className="text-base font-semibold text-(--color-foreground) truncate">
                                     {item.title}
                                 </p>
-                                <p className="text-xs text-(--color-muted) font-mono">
+                                <p className="text-sm text-(--color-muted) font-mono">
                                     {item.slug}
                                 </p>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                                 <button
                                     onClick={() => toggleFeatured(item)}
-                                    className="text-xs px-2 py-1 rounded border border-(--color-border) text-(--color-muted) hover:text-(--color-foreground) transition-colors"
+                                    className="text-sm px-2 py-1 rounded border border-(--color-border) text-(--color-muted) hover:text-(--color-foreground) transition-colors"
                                 >
                                     {item.featured
                                         ? "featured 해제"
@@ -425,13 +434,13 @@ export default function PortfolioPanel() {
                                 </button>
                                 <button
                                     onClick={() => openEdit(item)}
-                                    className="text-xs px-2 py-1 rounded border border-(--color-border) text-(--color-muted) hover:text-(--color-foreground) transition-colors"
+                                    className="text-sm px-2 py-1 rounded border border-(--color-border) text-(--color-muted) hover:text-(--color-foreground) transition-colors"
                                 >
                                     편집
                                 </button>
                                 <button
                                     onClick={() => handleDelete(item.id)}
-                                    className="text-xs px-2 py-1 rounded border border-red-200 text-red-400 hover:text-red-600 hover:border-red-400 transition-colors"
+                                    className="text-sm px-2 py-1 rounded border border-red-200 text-red-400 hover:text-red-600 hover:border-red-400 transition-colors"
                                 >
                                     삭제
                                 </button>
