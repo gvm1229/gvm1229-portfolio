@@ -12,7 +12,8 @@
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "git-refresh": "git reset HEAD && git rm -r --cached . 2>/dev/null || true && git add .",
-        "reinstall": "rm -rf node_modules pnpm-lock.yaml && pnpm install",
+        "purge": "rm -rf .astro && astro sync",
+        "reinstall": "rm -rf node_modules pnpm-lock.yaml && pnpm install && pnpm purge",
         "upgrade-all": "pnpm update --latest",
         "prepare": "husky || true",
         "migrate": "tsx scripts/migrate-to-supabase.ts"
