@@ -18,14 +18,14 @@
 
 정적 사이트(SEO 우선)와 런타임 업데이트(재배포 없이 내용 변경 가능)를 동시에 지원하는 **하이브리드 모델**을 사용함.
 
-| 데이터             | 렌더링 방식           | 소스                              |
-| ------------------ | --------------------- | --------------------------------- |
-| 블로그 포스트 본문 | 빌드 타임 (정적)      | Supabase `posts` 테이블           |
-| 포트폴리오 상세    | 빌드 타임 (정적)      | Supabase `portfolio_items` 테이블 |
-| About me 프로필    | 런타임 (React island) | Supabase `about_data` 테이블      |
-| 컬러 스킴          | 런타임 (React island) | Supabase `site_config` 테이블     |
-| 이력서             | 빌드 타임 (정적)      | `src/data/resume.json`            |
-| `job_field` 설정   | 빌드 타임             | Supabase `site_config` → env 폴백 |
+| 데이터             | 렌더링 방식           | 소스                               |
+| ------------------ | --------------------- | ---------------------------------- |
+| 블로그 포스트 본문 | 빌드 타임 (정적)      | Supabase `posts` 테이블            |
+| 포트폴리오 상세    | 빌드 타임 (정적)      | Supabase `portfolio_items` 테이블  |
+| About me 프로필    | 런타임 (React island) | Supabase `about_data` 테이블       |
+| 컬러 스킴          | 런타임 (React island) | Supabase `site_config` 테이블      |
+| 이력서             | 빌드 타임 (정적)      | `src/data/resume.json` (단일 파일) |
+| `job_field` 설정   | 빌드 타임             | Supabase `site_config` → env 폴백  |
 
 블로그/포트폴리오는 Vercel Deploy Hook으로 Admin에서 "게시" 버튼을 누르면 정적 재빌드가 트리거됨.
 

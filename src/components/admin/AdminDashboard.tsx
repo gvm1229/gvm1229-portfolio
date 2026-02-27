@@ -18,6 +18,7 @@ import PortfolioPanel from "@/components/admin/panels/PortfolioPanel";
 import TagsPanel from "@/components/admin/panels/TagsPanel";
 import AboutPanel from "@/components/admin/panels/AboutPanel";
 import SiteConfigPanel from "@/components/admin/panels/SiteConfigPanel";
+import ResumePanel from "@/components/admin/panels/ResumePanel";
 
 // 탭 정의
 const TABS = [
@@ -25,6 +26,7 @@ const TABS = [
     { id: "portfolio", label: "포트폴리오", icon: "🗂️" },
     { id: "tags", label: "태그", icon: "🏷️" },
     { id: "about", label: "About", icon: "👤" },
+    { id: "resume", label: "이력서", icon: "📄" },
     { id: "config", label: "사이트 설정", icon: "⚙️" },
 ] as const;
 
@@ -87,12 +89,12 @@ export default function AdminDashboard() {
                     ))}
                 </nav>
 
-                {/* 패널 영역 */}
                 <main className="flex-1 overflow-y-auto p-6">
                     {activeTab === "posts" && <PostsPanel />}
                     {activeTab === "portfolio" && <PortfolioPanel />}
                     {activeTab === "tags" && <TagsPanel />}
                     {activeTab === "about" && <AboutPanel />}
+                    {activeTab === "resume" && <ResumePanel />}
                     {activeTab === "config" && <SiteConfigPanel />}
                 </main>
             </div>

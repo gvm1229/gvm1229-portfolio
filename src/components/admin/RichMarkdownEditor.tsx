@@ -43,7 +43,7 @@ import {
     type DirectiveEditorProps,
 } from "@mdxeditor/editor";
 import "@mdxeditor/editor/style.css";
-import { markdocToMdx, mdxToMarkdoc } from "@/lib/markdoc-mdx-converter";
+import { jsxToDirective, directiveToJsx } from "@/lib/mdx-directive-converter";
 import { uploadImageToSupabase } from "@/lib/image-upload";
 
 interface RichMarkdownEditorProps {
@@ -133,13 +133,77 @@ const FoliumTableDirectiveDescriptor: DirectiveDescriptor = {
     Editor: GenericDirectiveEditor,
 };
 
-function InsertYoutubeButton() {
+function InsertButtons() {
     const insertDirective = usePublisher(insertDirective$);
+    const [modal, setModal] = useState<"folium-table" | "youtube" | null>(null);
 
-    const handleClick = () => {
-        const url = window.prompt("YouTube URL 또는 Video ID를 입력하세요:");
-        if (!url?.trim()) return;
-        let id = url.trim();
+    // Folium Table 폼 상태
+    const [ftColumns, setFtColumns] = useState("항목, 내용");
+    const [ftRows, setFtRows] = useState("값1 | 값2\n값3 | 값4");
+    const [ftColHeadColors, setFtColHeadColors] = useState("");
+    const [ftRowColors, setFtRowColors] = useState("");
+
+    const handleInsertFoliumTable = () => {
+        const columns = ftColumns
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+        const rows = ftRows
+            .split("\n")
+            .filter((l) => l.trim())
+            .map((line) =>
+                line
+                    .split("|")
+                    .map((c) => c.trim())
+                    .filter((_, i, arr) => i < (columns.length || arr.length))
+            )
+            .filter((row) => row.length > 0);
+
+        if (columns.length === 0) return;
+        const colColors = ftColHeadColors
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+        const rowCols = ftRowColors
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+
+        const columnsJson = JSON.stringify(columns);
+        const rowsJson = JSON.stringify(
+            rows.length ? rows : [columns.map(() => "")]
+        );
+
+        const attrs: Record<string, string> = {
+            columns: columnsJson,
+            rows: rowsJson,
+        };
+
+        if (colColors.length)
+            attrs.columnHeadColors = JSON.stringify(colColors);
+        if (rowCols.length) attrs.rowColors = JSON.stringify(rowCols);
+
+        insertDirective({
+            type: "leafDirective",
+            name: "folium-table",
+            attributes: attrs,
+            children: [],
+        } as any);
+
+        setModal(null);
+        setFtColumns("항목, 내용");
+        setFtRows("값1 | 값2\n값3 | 값4");
+        setFtColHeadColors("");
+        setFtRowColors("");
+    };
+
+    // YouTube 폼 상태
+    const [ytId, setYtId] = useState("");
+
+    const handleInsertYoutube = () => {
+        let id = ytId.trim();
+        if (!id) return;
+
         try {
             const parsed = new URL(id);
             id =
@@ -149,74 +213,172 @@ function InsertYoutubeButton() {
         } catch {
             // Assume it's already an ID
         }
-        if (id) {
-            insertDirective({
-                type: "leafDirective",
-                name: "youtube",
-                attributes: { id },
-                children: [],
-            } as any);
-        }
-    };
-
-    return (
-        <button
-            type="button"
-            onClick={handleClick}
-            className="px-2 py-1 rounded text-sm font-medium border border-(--color-border) text-(--color-foreground) hover:bg-(--color-surface-subtle) hover:border-(--color-accent) hover:text-(--color-accent) transition-colors"
-        >
-            ▶ YouTube
-        </button>
-    );
-}
-
-function InsertFoliumTableButton() {
-    const insertDirective = usePublisher(insertDirective$);
-
-    const handleClick = () => {
-        const columns = window.prompt("컬럼 (쉼표 구분):", "항목, 내용");
-        if (!columns?.trim()) return;
-        const rows = window.prompt(
-            "행 데이터 (한 줄에 한 행, 셀은 | 구분):",
-            "값1 | 값2"
-        );
-        const cols = columns
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean);
-        const rowData = (rows || "")
-            .split("\n")
-            .filter((l) => l.trim())
-            .map((line) =>
-                line
-                    .split("|")
-                    .map((c) => c.trim())
-                    .slice(0, cols.length)
-            );
-        const columnsJson = JSON.stringify(cols);
-        const rowsJson = JSON.stringify(
-            rowData.length ? rowData : [cols.map(() => "")]
-        );
 
         insertDirective({
             type: "leafDirective",
-            name: "folium-table",
-            attributes: {
-                columns: columnsJson,
-                rows: rowsJson,
-            },
+            name: "youtube",
+            attributes: { id },
             children: [],
         } as any);
+
+        setModal(null);
+        setYtId("");
     };
 
     return (
-        <button
-            type="button"
-            onClick={handleClick}
-            className="px-2 py-1 rounded text-sm font-medium border border-(--color-border) text-(--color-foreground) hover:bg-(--color-surface-subtle) hover:border-(--color-accent) hover:text-(--color-accent) transition-colors"
-        >
-            📋 Folium Table
-        </button>
+        <>
+            <button
+                type="button"
+                onClick={() => setModal("youtube")}
+                className="px-2 py-1 rounded text-sm font-medium border border-(--color-border) text-(--color-foreground) hover:bg-(--color-surface-subtle) hover:border-(--color-accent) hover:text-(--color-accent) transition-colors"
+            >
+                ▶ YouTube
+            </button>
+            <button
+                type="button"
+                onClick={() => setModal("folium-table")}
+                className="px-2 py-1 rounded text-sm font-medium border border-(--color-border) text-(--color-foreground) hover:bg-(--color-surface-subtle) hover:border-(--color-accent) hover:text-(--color-accent) transition-colors"
+            >
+                📋 Folium Table
+            </button>
+
+            {/* Folium Table 모달 */}
+            {modal === "folium-table" && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+                    onClick={() => setModal(null)}
+                >
+                    <div
+                        className="w-full max-w-lg mx-4 p-6 rounded-xl border border-(--color-border) bg-(--color-surface) shadow-xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <h3 className="text-xl font-semibold text-(--color-foreground) mb-4">
+                            Folium Table 삽입
+                        </h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-base font-medium text-(--color-muted) mb-1">
+                                    컬럼 헤더 (쉼표 구분)
+                                </label>
+                                <input
+                                    type="text"
+                                    value={ftColumns}
+                                    onChange={(e) =>
+                                        setFtColumns(e.target.value)
+                                    }
+                                    placeholder="항목, 내용"
+                                    className="w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-surface-subtle) text-(--color-foreground) text-base"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-base font-medium text-(--color-muted) mb-1">
+                                    행 데이터 (한 줄에 한 행, 셀은 | 로 구분)
+                                </label>
+                                <textarea
+                                    value={ftRows}
+                                    onChange={(e) => setFtRows(e.target.value)}
+                                    rows={6}
+                                    placeholder="값1 | 값2&#10;값3 | 값4"
+                                    className="w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-surface-subtle) text-(--color-foreground) text-base font-mono resize-y"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-base font-medium text-(--color-muted) mb-1">
+                                    컬럼 헤더 색상 (선택, Tailwind 이름, 쉼표
+                                    구분)
+                                </label>
+                                <input
+                                    type="text"
+                                    value={ftColHeadColors}
+                                    onChange={(e) =>
+                                        setFtColHeadColors(e.target.value)
+                                    }
+                                    placeholder="green-400, blue-200"
+                                    className="w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-surface-subtle) text-(--color-foreground) text-base"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-base font-medium text-(--color-muted) mb-1">
+                                    행 배경 색상 (선택, 쉼표 구분)
+                                </label>
+                                <input
+                                    type="text"
+                                    value={ftRowColors}
+                                    onChange={(e) =>
+                                        setFtRowColors(e.target.value)
+                                    }
+                                    placeholder="green-100, green-50"
+                                    className="w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-surface-subtle) text-(--color-foreground) text-base"
+                                />
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-2 mt-6">
+                            <button
+                                type="button"
+                                onClick={() => setModal(null)}
+                                className="px-4 py-2 rounded-lg border border-(--color-border) text-base text-(--color-muted) hover:bg-(--color-surface-subtle)"
+                            >
+                                취소
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleInsertFoliumTable}
+                                className="px-4 py-2 rounded-lg bg-(--color-accent) text-(--color-on-accent) text-base font-medium"
+                            >
+                                삽입
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* YouTube 모달 */}
+            {modal === "youtube" && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+                    onClick={() => setModal(null)}
+                >
+                    <div
+                        className="w-full max-w-md mx-4 p-6 rounded-xl border border-(--color-border) bg-(--color-surface) shadow-xl"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <h3 className="text-xl font-semibold text-(--color-foreground) mb-4">
+                            YouTube 삽입
+                        </h3>
+                        <div>
+                            <label className="block text-base font-medium text-(--color-muted) mb-1">
+                                동영상 ID
+                            </label>
+                            <input
+                                type="text"
+                                value={ytId}
+                                onChange={(e) => setYtId(e.target.value)}
+                                placeholder="Qr6olpAJfvk (youtu.be/Qr6olpAJfvk 에서)"
+                                className="w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-surface-subtle) text-(--color-foreground) text-base"
+                                autoFocus
+                            />
+                        </div>
+                        <div className="flex justify-end gap-2 mt-6">
+                            <button
+                                type="button"
+                                onClick={() => setModal(null)}
+                                className="px-4 py-2 rounded-lg border border-(--color-border) text-base text-(--color-muted) hover:bg-(--color-surface-subtle)"
+                            >
+                                취소
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleInsertYoutube}
+                                disabled={!ytId.trim()}
+                                className="px-4 py-2 rounded-lg bg-(--color-accent) text-(--color-on-accent) text-base font-medium disabled:opacity-50"
+                            >
+                                삽입
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 }
 
@@ -246,13 +408,13 @@ export default function RichMarkdownEditor({
 
     const handleChange = useCallback(
         (mdxMarkdown: string) => {
-            const markdoc = mdxToMarkdoc(mdxMarkdown);
-            onChange(markdoc);
+            const jsxString = directiveToJsx(mdxMarkdown);
+            onChange(jsxString);
         },
         [onChange]
     );
 
-    const mdxValue = markdocToMdx(value);
+    const mdxValue = jsxToDirective(value);
 
     const imageUploadHandler = useCallback(
         async (file: File): Promise<string> => {
@@ -343,8 +505,7 @@ export default function RichMarkdownEditor({
                                     <InsertCodeBlock />
                                     <InsertTable />
                                     <div className="w-px h-5 bg-(--color-border)" />
-                                    <InsertYoutubeButton />
-                                    <InsertFoliumTableButton />
+                                    <InsertButtons />
                                 </div>
                             </DiffSourceToggleWrapper>
                         ),

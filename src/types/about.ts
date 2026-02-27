@@ -1,5 +1,5 @@
 /**
- * About 페이지 데이터 스키마 (src/data/about.json)
+ * About 페이지 데이터 스키마 (Supabase about_data 테이블)
  * - sections: 경험 유형별 리스트
  * - competencySections: 역량 키워드별 리스트
  */
