@@ -1,0 +1,71 @@
+/**
+ * JSX ↔ MDX directive 양방향 변환
+ *
+ * Supabase에는 표준 MDX(JSX) 형식 저장, MDXEditor에는 remark-directive 형식 사용.
+ * - JSX: <YouTube id="x" />, <FoliumTable columns="..." rows="..." />
+ * - MDX(Editor): ::youtube[]{id="x"}, ::folium-table[]{columns="..." rows="..."}
+ */
+
+/** JSX → MDX Directives (에디터 로드 시) */
+export function jsxToDirective(content: string): string {
+    let out = content;
+
+    // <YouTube id="xxx" /> → ::youtube[]{id="xxx"}
+    out = out.replace(
+        /<YouTube\s+id\s*=\s*"([^"]*)"\s*\/>/g,
+        (_, id) => `::youtube[]{id="${id}"}`
+    );
+
+    // <FoliumTable ... /> → ::folium-table[]{columns="..." rows="..."}
+    out = out.replace(/<FoliumTable\s+([\s\S]*?)\s*\/>/g, (_, attrs) => {
+        // attrs: columns={'["val"]'} rows={'[["r1"]]'}
+        // regex to extract key={'val'}
+        const regex = /(\w+)\s*=\s*\{'((?:[^'\\]|\\.)*)'\}/g;
+        const parts: string[] = [];
+        let m: RegExpExecArray | null;
+        while ((m = regex.exec(attrs)) !== null) {
+            // unescape \' to '
+            let val = m[2].replace(/\\'/g, "'");
+            // escape " to \"
+            val = val.replace(/"/g, '\\"');
+            parts.push(`${m[1]}="${val}"`);
+        }
+        return `::folium-table[]{${parts.join(" ")}}`;
+    });
+
+    return out;
+}
+
+/** MDX Directives → JSX (저장 시) */
+export function directiveToJsx(content: string): string {
+    let out = content;
+
+    // ::youtube[]{id="xxx"} → <YouTube id="xxx" />
+    out = out.replace(
+        /::youtube\[\]\{id="([^"]*)"\}/g,
+        (_, id) => `<YouTube id="${id}" />`
+    );
+
+    // ::youtube[]{id=xxx} (unquoted id)
+    out = out.replace(
+        /::youtube\[\]\{id=([^\s"}]+)\}/g,
+        (_, id) => `<YouTube id="${id}" />`
+    );
+
+    // ::folium-table[]{attr="val" ...} → <FoliumTable attr={'val'} ... />
+    out = out.replace(/::folium-table\[\]\{([^}]*)\}/g, (_, attrs) => {
+        const parts: string[] = [];
+        const regex = /(\w+)=("(?:[^"\\]|\\.)*"|[^\s}]+)/g;
+        let m: RegExpExecArray | null;
+        while ((m = regex.exec(attrs)) !== null) {
+            const rawVal = m[2].startsWith('"') ? m[2].slice(1, -1) : m[2];
+            // rawVal => [\"option\", \"type\"]
+            let cleanVal = rawVal.replace(/\\"/g, '"'); // ["option", "type"]
+            cleanVal = cleanVal.replace(/'/g, "\\'");
+            parts.push(`${m[1]}={'${cleanVal}'}`);
+        }
+        return `<FoliumTable ${parts.join(" ")} />`;
+    });
+
+    return out;
+}
