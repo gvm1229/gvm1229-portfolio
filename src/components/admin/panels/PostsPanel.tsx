@@ -3,10 +3,14 @@
  *
  * 블로그 포스트 목록 조회, 생성, 편집, 삭제, 발행/초안 전환을 담당한다.
  * - 목록 화면과 편집 화면을 같은 패널 내에서 전환한다.
- * - 마크다운 편집은 기본 textarea 사용 (미리보기는 우측 컬럼).
+ * - 마크다운 편집 시 좌측 에디터 + 우측 라이브 미리보기 (Keystatic/Notion 스타일).
  */
 import { useEffect, useState } from "react";
 import { browserClient } from "@/lib/supabase";
+import RichMarkdownEditor from "@/components/admin/RichMarkdownEditor";
+import TagSelector from "@/components/admin/TagSelector";
+import CategorySelect from "@/components/admin/CategorySelect";
+import ThumbnailUploadField from "@/components/admin/ThumbnailUploadField";
 
 // 포스트 행 타입 (Supabase posts 테이블)
 interface Post {
@@ -183,23 +187,21 @@ export default function PostsPanel() {
     // ── 편집 화면 ────────────────────────────────────────────
     if (editTarget !== null) {
         return (
-            <div className="max-w-4xl">
-                <div className="flex items-center gap-3 mb-6">
-                    <button
-                        onClick={() => setEditTarget(null)}
-                        className="text-sm text-(--color-muted) hover:text-(--color-foreground) transition-colors"
-                    >
-                        ← 목록
-                    </button>
-                    <h2 className="text-xl font-bold text-(--color-foreground)">
-                        {editTarget === "new" ? "새 포스트" : "포스트 편집"}
-                    </h2>
-                </div>
+            <div className="w-full max-w-6xl">
+                <button
+                    onClick={() => setEditTarget(null)}
+                    className="text-lg text-(--color-muted) bg-(--color-surface-subtle) px-3 py-2 rounded-lg border border-(--color-border) hover:text-(--color-foreground) hover:bg-(--color-surface-subtle) hover:border-(--color-accent) transition-colors"
+                >
+                    ← 목록
+                </button>
+                <h2 className="mt-6 text-3xl font-bold text-(--color-foreground)">
+                    {editTarget === "new" ? "새 포스트" : "포스트 편집"}
+                </h2>
 
-                <div className="space-y-4">
+                <div className="mt-6 space-y-4">
                     {/* 제목 */}
                     <div>
-                        <label className="block text-sm font-medium text-(--color-muted) mb-1">
+                        <label className="block text-base font-medium text-(--color-muted) mb-1">
                             제목 *
                         </label>
                         <input
@@ -213,14 +215,14 @@ export default function PostsPanel() {
                                     slug: f.slug || toSlug(t),
                                 }));
                             }}
-                            className="w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-surface) text-(--color-foreground) text-sm focus:outline-none focus:ring-2 focus:ring-(--color-accent)/40"
+                            className="w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-surface) text-(--color-foreground) text-base focus:outline-none focus:ring-2 focus:ring-(--color-accent)/40"
                         />
                     </div>
 
                     {/* slug + 발행일 */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-(--color-muted) mb-1">
+                            <label className="block text-base font-medium text-(--color-muted) mb-1">
                                 Slug *
                             </label>
                             <input
@@ -232,11 +234,11 @@ export default function PostsPanel() {
                                         slug: e.target.value,
                                     }))
                                 }
-                                className="w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-surface) text-(--color-foreground) text-sm font-mono focus:outline-none focus:ring-2 focus:ring-(--color-accent)/40"
+                                className="w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-surface) text-(--color-foreground) text-base font-mono focus:outline-none focus:ring-2 focus:ring-(--color-accent)/40"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-(--color-muted) mb-1">
+                            <label className="block text-base font-medium text-(--color-muted) mb-1">
                                 발행일
                             </label>
                             <input
@@ -248,54 +250,53 @@ export default function PostsPanel() {
                                         pub_date: e.target.value,
                                     }))
                                 }
-                                className="w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-surface) text-(--color-foreground) text-sm focus:outline-none focus:ring-2 focus:ring-(--color-accent)/40"
+                                className="w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-surface) text-(--color-foreground) text-base focus:outline-none focus:ring-2 focus:ring-(--color-accent)/40"
                             />
                         </div>
                     </div>
 
                     {/* 카테고리 + 태그 */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 tablet:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-(--color-muted) mb-1">
+                            <label className="block text-base font-medium text-(--color-muted) mb-1">
                                 카테고리
                             </label>
-                            <input
-                                type="text"
+                            <CategorySelect
                                 value={form.category}
-                                onChange={(e) =>
+                                onChange={(v) =>
                                     setForm((f) => ({
                                         ...f,
-                                        category: e.target.value,
+                                        category: v,
                                     }))
                                 }
-                                className="w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-surface) text-(--color-foreground) text-sm focus:outline-none focus:ring-2 focus:ring-(--color-accent)/40"
+                                options={[
+                                    ...new Set(
+                                        posts
+                                            .map((p) => p.category)
+                                            .filter(
+                                                (c): c is string => !!c?.trim()
+                                            )
+                                    ),
+                                ]}
+                                placeholder="선택 또는 새로 입력"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-(--color-muted) mb-1">
-                                태그{" "}
-                                <span className="text-xs text-(--color-muted)">
-                                    (쉼표 구분)
-                                </span>
+                            <label className="block text-base font-medium text-(--color-muted) mb-1">
+                                태그
                             </label>
-                            <input
-                                type="text"
+                            <TagSelector
                                 value={form.tags}
-                                onChange={(e) =>
-                                    setForm((f) => ({
-                                        ...f,
-                                        tags: e.target.value,
-                                    }))
+                                onChange={(v) =>
+                                    setForm((f) => ({ ...f, tags: v }))
                                 }
-                                placeholder="tag1, tag2, tag3"
-                                className="w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-surface) text-(--color-foreground) text-sm focus:outline-none focus:ring-2 focus:ring-(--color-accent)/40"
                             />
                         </div>
                     </div>
 
                     {/* 요약 */}
                     <div>
-                        <label className="block text-sm font-medium text-(--color-muted) mb-1">
+                        <label className="block text-base font-medium text-(--color-muted) mb-1">
                             요약
                         </label>
                         <textarea
@@ -307,44 +308,30 @@ export default function PostsPanel() {
                                 }))
                             }
                             rows={2}
-                            className="w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-surface) text-(--color-foreground) text-sm focus:outline-none focus:ring-2 focus:ring-(--color-accent)/40 resize-y"
+                            className="w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-surface) text-(--color-foreground) text-base focus:outline-none focus:ring-2 focus:ring-(--color-accent)/40 resize-y"
                         />
                     </div>
 
-                    {/* 썸네일 URL */}
-                    <div>
-                        <label className="block text-sm font-medium text-(--color-muted) mb-1">
-                            썸네일 URL
-                        </label>
-                        <input
-                            type="text"
-                            value={form.thumbnail}
-                            onChange={(e) =>
-                                setForm((f) => ({
-                                    ...f,
-                                    thumbnail: e.target.value,
-                                }))
-                            }
-                            placeholder="/images/posts/..."
-                            className="w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-surface) text-(--color-foreground) text-sm font-mono focus:outline-none focus:ring-2 focus:ring-(--color-accent)/40"
-                        />
-                    </div>
+                    {/* 썸네일: 파일 업로드 또는 URL 입력 */}
+                    <ThumbnailUploadField
+                        value={form.thumbnail}
+                        onChange={(url) =>
+                            setForm((f) => ({ ...f, thumbnail: url }))
+                        }
+                        placeholder="파일 업로드 또는 URL 입력"
+                    />
 
-                    {/* 본문 마크다운 */}
+                    {/* 본문: WYSIWYG 마크다운 에디터 */}
                     <div>
-                        <label className="block text-sm font-medium text-(--color-muted) mb-1">
+                        <label className="block text-base font-medium text-(--color-muted) mb-1">
                             본문 (Markdown)
                         </label>
-                        <textarea
+                        <RichMarkdownEditor
                             value={form.content}
-                            onChange={(e) =>
-                                setForm((f) => ({
-                                    ...f,
-                                    content: e.target.value,
-                                }))
+                            onChange={(c) =>
+                                setForm((f) => ({ ...f, content: c }))
                             }
-                            rows={20}
-                            className="w-full px-3 py-2 rounded-lg border border-(--color-border) bg-(--color-surface) text-(--color-foreground) text-sm font-mono focus:outline-none focus:ring-2 focus:ring-(--color-accent)/40 resize-y"
+                            placeholder="본문을 작성하세요. ## 제목, **굵게**, [링크](url) 등 마크다운 문법이 즉시 반영됩니다."
                         />
                     </div>
 
@@ -361,22 +348,22 @@ export default function PostsPanel() {
                             }
                             className="w-4 h-4 accent-(--color-accent)"
                         />
-                        <span className="text-sm font-medium text-(--color-foreground)">
+                        <span className="text-base font-medium text-(--color-foreground)">
                             즉시 발행
                         </span>
-                        <span className="text-xs text-(--color-muted)">
+                        <span className="text-sm text-(--color-muted)">
                             (체크 해제 시 초안으로 저장)
                         </span>
                     </label>
 
                     {/* 피드백 */}
                     {error && (
-                        <p className="text-sm text-red-500 bg-red-50 dark:bg-red-950/30 px-3 py-2 rounded-lg">
+                        <p className="text-base text-red-500 bg-red-50 dark:bg-red-950/30 px-3 py-2 rounded-lg">
                             {error}
                         </p>
                     )}
                     {success && (
-                        <p className="text-sm text-green-600 bg-green-50 dark:bg-green-950/30 px-3 py-2 rounded-lg">
+                        <p className="text-base text-green-600 bg-green-50 dark:bg-green-950/30 px-3 py-2 rounded-lg">
                             {success}
                         </p>
                     )}
@@ -386,13 +373,13 @@ export default function PostsPanel() {
                         <button
                             onClick={handleSave}
                             disabled={saving}
-                            className="px-5 py-2 rounded-lg bg-(--color-accent) text-(--color-on-accent) text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+                            className="px-5 py-2 rounded-lg bg-(--color-accent) text-(--color-on-accent) text-base font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
                         >
                             {saving ? "저장 중..." : "저장"}
                         </button>
                         <button
                             onClick={() => setEditTarget(null)}
-                            className="px-5 py-2 rounded-lg border border-(--color-border) text-sm font-medium text-(--color-muted) hover:text-(--color-foreground) transition-colors"
+                            className="px-5 py-2 rounded-lg border border-(--color-border) text-base font-medium text-(--color-muted) hover:text-(--color-foreground) transition-colors"
                         >
                             취소
                         </button>
@@ -406,23 +393,23 @@ export default function PostsPanel() {
     return (
         <div>
             <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-(--color-foreground)">
+                <h2 className="text-2xl font-bold text-(--color-foreground)">
                     블로그 포스트
                 </h2>
                 <button
                     onClick={openNew}
-                    className="px-4 py-2 rounded-lg bg-(--color-accent) text-(--color-on-accent) text-sm font-semibold hover:opacity-90 transition-opacity"
+                    className="px-4 py-2 rounded-lg bg-(--color-accent) text-(--color-on-accent) text-base font-semibold hover:opacity-90 transition-opacity"
                 >
                     + 새 포스트
                 </button>
             </div>
 
-            {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
+            {error && <p className="text-base text-red-500 mb-4">{error}</p>}
 
             {loading ? (
-                <p className="text-sm text-(--color-muted)">불러오는 중...</p>
+                <p className="text-base text-(--color-muted)">불러오는 중...</p>
             ) : posts.length === 0 ? (
-                <p className="text-sm text-(--color-muted)">
+                <p className="text-base text-(--color-muted)">
                     포스트가 없습니다.
                 </p>
             ) : (
@@ -435,7 +422,7 @@ export default function PostsPanel() {
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-0.5">
                                     <span
-                                        className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${
+                                        className={`inline-block text-sm px-2 py-0.5 rounded-full font-medium ${
                                             post.published
                                                 ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
                                                 : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400"
@@ -444,15 +431,15 @@ export default function PostsPanel() {
                                         {post.published ? "발행" : "초안"}
                                     </span>
                                     {post.category && (
-                                        <span className="text-xs text-(--color-muted)">
+                                        <span className="text-sm text-(--color-muted)">
                                             {post.category}
                                         </span>
                                     )}
                                 </div>
-                                <p className="text-sm font-semibold text-(--color-foreground) truncate">
+                                <p className="text-base font-semibold text-(--color-foreground) truncate">
                                     {post.title}
                                 </p>
-                                <p className="text-xs text-(--color-muted) font-mono">
+                                <p className="text-sm text-(--color-muted) font-mono">
                                     {post.slug} ·{" "}
                                     {new Date(post.pub_date).toLocaleDateString(
                                         "ko-KR"
@@ -462,19 +449,19 @@ export default function PostsPanel() {
                             <div className="flex items-center gap-2 shrink-0">
                                 <button
                                     onClick={() => togglePublish(post)}
-                                    className="text-xs px-2 py-1 rounded border border-(--color-border) text-(--color-muted) hover:text-(--color-foreground) transition-colors"
+                                    className="text-sm px-2 py-1 rounded border border-(--color-border) text-(--color-muted) hover:text-(--color-foreground) transition-colors"
                                 >
                                     {post.published ? "초안으로" : "발행"}
                                 </button>
                                 <button
                                     onClick={() => openEdit(post)}
-                                    className="text-xs px-2 py-1 rounded border border-(--color-border) text-(--color-muted) hover:text-(--color-foreground) transition-colors"
+                                    className="text-sm px-2 py-1 rounded border border-(--color-border) text-(--color-muted) hover:text-(--color-foreground) transition-colors"
                                 >
                                     편집
                                 </button>
                                 <button
                                     onClick={() => handleDelete(post.id)}
-                                    className="text-xs px-2 py-1 rounded border border-red-200 text-red-400 hover:text-red-600 hover:border-red-400 transition-colors"
+                                    className="text-sm px-2 py-1 rounded border border-red-200 text-red-400 hover:text-red-600 hover:border-red-400 transition-colors"
                                 >
                                     삭제
                                 </button>
