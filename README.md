@@ -74,8 +74,8 @@ pnpm install
 pnpm dev
 ```
 
-- 사이트: http://localhost:4321
-- Admin 대시보드 (Supabase 관리): http://127.0.0.1:4321/admin
+- 사이트: <http://localhost:4321>
+- Admin 대시보드 (Supabase 관리): <http://127.0.0.1:4321/admin>
 
 ## 환경 변수
 
