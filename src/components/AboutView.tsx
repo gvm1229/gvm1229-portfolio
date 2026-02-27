@@ -74,7 +74,8 @@ export default function AboutView() {
     }
 
     const profileImage =
-        data.profileImage?.trim() || "/images/avatar-placeholder.svg";
+        data.profileImage?.trim() ||
+        "https://urqqfjxocxfrvuozgobi.supabase.co/storage/v1/object/public/images/legacy/avatar-placeholder-c9516fa9.svg";
     const contacts = data.contacts ?? {};
     const sections = data.sections ?? {};
     const competencySections = data.competencySections ?? {};

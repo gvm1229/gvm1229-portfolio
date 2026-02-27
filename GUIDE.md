@@ -251,10 +251,7 @@ Supabase Dashboard에서 언제든 변경할 수 있음.
 
 ### 8.1 수정할 파일
 
-- **한국어 이력서**: `src/data/resume.json`
-- **영문 이력서**: `src/data/resume_en.json`
-
-두 파일 구조는 같고, 언어만 다르게 채우면 됨.
+- **이력서**: `src/data/resume.json` (단일 파일)
 
 ### 8.2 어떤 내용을 넣는지
 
@@ -428,7 +425,7 @@ Admin 대시보드에 있는 **게시(Publish)** 버튼을 누르면 Vercel Depl
 | 하고 싶은 일          | 어디서 / 어떤 파일                                                        |
 | --------------------- | ------------------------------------------------------------------------- |
 | 소개(About me) 채우기 | Admin 대시보드 → About 편집 → 즉시 반영                                   |
-| 이력서 채우기         | `src/data/resume.json`, `src/data/resume_en.json` 편집 후 재빌드          |
+| 이력서 채우기         | `src/data/resume.json` 편집 후 재빌드                                     |
 | 포트폴리오 추가·수정  | Admin 대시보드 → Portfolio 편집 → 게시(재빌드)                            |
 | 블로그 글 쓰기        | Admin 대시보드 → Posts 편집 → 게시(재빌드)                                |
 | 태그 관리             | Admin 대시보드 → Tags 편집                                                |
